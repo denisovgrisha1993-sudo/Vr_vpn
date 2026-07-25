@@ -24,31 +24,14 @@ jobs:
           echo "NDK_HOME=$ANDROID_HOME/ndk/29.0.14206865" >> $GITHUB_ENV
           sed -i '10i\        ndkVersion = "29.0.14206865"' ${{ github.workspace }}/V2rayNG/app/build.gradle.kts
 
-      - name: Hardcode Custom Routing Rules
+      - name: Set Custom Routing as Default
         run: |
-          # 1. Принудительно включаем "Пользовательские правила" (режим 3) по умолчанию
-          find . -type f -name "MmkvManager.kt" -exec sed -i 's/ROUTING_MODE, "0"/ROUTING_MODE, "3"/g' {} +
-          find . -type f -name "MmkvManager.kt" -exec sed -i 's/ROUTING_MODE, "2"/ROUTING_MODE, "3"/g' {} +
-
-          # 2. Твой идеальный список доменов из JSON (строго сохраняя синтаксис кавычек)
-          RU_DOMAINS='"domain:ru","geosite:yandex","geosite:vk","domain:ozon.ru","domain:wildberries.ru","domain:wb.ru","domain:avito.ru","domain:sberbank.ru","domain:tinkoff.ru","domain:tbank.ru","domain:gosuslugi.ru"'
-          
-          # 3. Массовая и агрессивная подмена во всех файлах проекта (Kotlin, JSON, XML)
-          find . -type f \( -name "*.kt" -o -name "*.json" -o -name "*.xml" \) -exec sh -c '
-            # Заменяем китайские домены и IP на российские
-            sed -i "s/\"geosite:cn\"/$RU_DOMAINS/g" "$1"
-            sed -i "s/\"geoip:cn\"/\"geoip:ru\"/g" "$1"
-            
-            # Переводим названия (remarks) на чистый русский, как в твоем JSON
-            sed -i "s/绕过中国域名/RU/g" "$1"
-            sed -i "s/绕过中国IP/RU IP/g" "$1"
-            sed -i "s/阻断udp443/Блокировка QUIC/g" "$1"
-            sed -i "s/代理Google/Прокси Google/g" "$1"
-            sed -i "s/绕过局域网IP/Локальные IP/g" "$1"
-            sed -i "s/绕过局域网域名/Локальные домены/g" "$1"
-            sed -i "s/绕过中国公共DNSIP/Публичные DNS IP/g" "$1"
-            sed -i "s/绕过中国公共DNS域名/Публичные DNS домены/g" "$1"
-          ' sh {} \;
+          # Меняем ТОЛЬКО режим по умолчанию в MmkvManager.kt, безопасно. Больше ничего не трогаем!
+          FILE_MMKV=$(find . -name "MmkvManager.kt" | head -n 1)
+          if [ -n "$FILE_MMKV" ]; then
+            sed -i 's/ROUTING_MODE, "0"/ROUTING_MODE, "3"/g' "$FILE_MMKV"
+            sed -i 's/ROUTING_MODE, "2"/ROUTING_MODE, "3"/g' "$FILE_MMKV"
+          fi
 
       - name: Build libhevtun
         run: |
