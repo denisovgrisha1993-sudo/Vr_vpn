@@ -26,15 +26,14 @@ jobs:
 
       - name: Hardcode Russian Routing Defaults
         run: |
-          # Находим файл менеджера настроек (MMKV)
           FILE=$(find . -name "MmkvManager.kt" | head -n 1)
           
-          # Автоматически переключаем режим маршрутизации по умолчанию на "Custom" (Пользовательский)
+          # Автоматически переключаем режим маршрутизации по умолчанию на "Custom"
           sed -i 's/ROUTING_MODE, "0"/ROUTING_MODE, "3"/g' $FILE
           sed -i 's/ROUTING_MODE, "2"/ROUTING_MODE, "3"/g' $FILE
           
-          # Зашиваем полный список российских доменов в исключения (в обход туннеля)
-          RU_RULES="geosite:category-gov-ru,domain:ru,domain:su,domain:xn--p1ai,domain:yandex.ru,domain:ya.ru,domain:vk.com,domain:kinopoisk.ru,domain:sberbank.ru,domain:tbank.ru,domain:tinkoff.ru,domain:gosuslugi.ru,domain:avito.ru,domain:ozon.ru,domain:wildberries.ru,domain:mail.ru"
+          # Зашиваем твои домены, geosite и geoip:ru для обхода блокировок по IP
+          RU_RULES="geoip:ru,geosite:yandex,geosite:vk,geosite:category-gov-ru,domain:ru,domain:su,domain:xn--p1ai,domain:ozon.ru,domain:wildberries.ru,domain:wb.ru,domain:avito.ru,domain:sberbank.ru,domain:tinkoff.ru,domain:tbank.ru,domain:gosuslugi.ru"
           sed -i "s/ROUTING_DIRECT, \"\"/ROUTING_DIRECT, \"$RU_RULES\"/g" $FILE
 
       - name: Build libhevtun
