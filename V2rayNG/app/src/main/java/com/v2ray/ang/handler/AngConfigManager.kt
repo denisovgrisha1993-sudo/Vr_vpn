@@ -711,4 +711,48 @@ object AngConfigManager {
 
         return "$addrPart : ${port ?: ""}"
     }
+
+    /**
+     * Default preset routing rules with RU customization.
+     */
+    fun getDefaultRoutingRules(): List<com.v2ray.ang.dto.RuleEntity> {
+        return listOf(
+            com.v2ray.ang.dto.RuleEntity().apply {
+                remarks = "Блокировка QUIC"
+                port = "443"
+                outboundTag = "block"
+                enabled = true
+            },
+            com.v2ray.ang.dto.RuleEntity().apply {
+                remarks = "Прокси Google"
+                domain = "geosite:google"
+                outboundTag = "proxy"
+                enabled = true
+            },
+            com.v2ray.ang.dto.RuleEntity().apply {
+                remarks = "Локальные IP"
+                ip = "geoip:private"
+                outboundTag = "direct"
+                enabled = true
+            },
+            com.v2ray.ang.dto.RuleEntity().apply {
+                remarks = "Локальные домены"
+                domain = "geosite:private"
+                outboundTag = "direct"
+                enabled = true
+            },
+            com.v2ray.ang.dto.RuleEntity().apply {
+                remarks = "RU IP"
+                ip = "geoip:ru"
+                outboundTag = "direct"
+                enabled = true
+            },
+            com.v2ray.ang.dto.RuleEntity().apply {
+                remarks = "RU"
+                domain = "domain:ru,domain:su,domain:xn--p1ai,geosite:yandex,geosite:vk,domain:ozon.ru,domain:wildberries.ru,domain:wb.ru,domain:avito.ru,domain:sberbank.ru,domain:tinkoff.ru,domain:tbank.ru,domain:gosuslugi.ru"
+                outboundTag = "direct"
+                enabled = true
+            }
+        )
+    }
 }
