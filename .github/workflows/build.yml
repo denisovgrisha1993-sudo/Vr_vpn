@@ -24,13 +24,18 @@ jobs:
           echo "NDK_HOME=$ANDROID_HOME/ndk/29.0.14206865" >> $GITHUB_ENV
           sed -i '10i\        ndkVersion = "29.0.14206865"' ${{ github.workspace }}/V2rayNG/app/build.gradle.kts
 
-      - name: Set Custom Routing as Default
+      - name: Configure Direct Rules and Custom Routing Defaults
         run: |
-          # Гарантируем, что приложение "из коробки" использует твои кастомные правила из AngConfigManager
+          # Безопасная подмена констант маршрутизации в MmkvManager.kt
           FILE=$(find . -name "MmkvManager.kt" | head -n 1)
           if [ -n "$FILE" ]; then
+            # Переключаем режим маршрутизации по умолчанию на "3" (Пользовательские правила)
             sed -i 's/ROUTING_MODE, "0"/ROUTING_MODE, "3"/g' $FILE
             sed -i 's/ROUTING_MODE, "2"/ROUTING_MODE, "3"/g' $FILE
+
+            # Зашиваем твои домены напрямую в список исключений
+            RU_RULES="geoip:ru,domain:ru,domain:su,domain:xn--p1ai,geosite:yandex,geosite:vk,domain:ozon.ru,domain:wildberries.ru,domain:wb.ru,domain:avito.ru,domain:sberbank.ru,domain:tinkoff.ru,domain:tbank.ru,domain:gosuslugi.ru"
+            sed -i "s/ROUTING_DIRECT, \"\"/ROUTING_DIRECT, \"$RU_RULES\"/g" $FILE
           fi
 
       - name: Build libhevtun
