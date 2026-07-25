@@ -20,10 +20,15 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22.x'
+
       - name: Make Gradle executable
         run: chmod +x ./gradlew
 
-      - name: Build Debug APK (No keys required)
+      - name: Build Debug APK
         run: ./gradlew assembleDebug --stacktrace
 
       - name: Upload APK
