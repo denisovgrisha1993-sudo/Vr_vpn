@@ -24,36 +24,14 @@ jobs:
           echo "NDK_HOME=$ANDROID_HOME/ndk/29.0.14206865" >> $GITHUB_ENV
           sed -i '10i\        ndkVersion = "29.0.14206865"' ${{ github.workspace }}/V2rayNG/app/build.gradle.kts
 
-      - name: Clean up and Inject Custom Russian Routing
+      - name: Set Custom Routing as Default
         run: |
-          # 1. Включаем Пользовательские правила (Custom) по умолчанию
-          CONFIG_FILE=$(find . -name "AngConfigManager.kt" -o -name "MmkvManager.kt" | head -n 1)
-          if [ -n "$CONFIG_FILE" ]; then
-            sed -i 's/ROUTING_MODE, "0"/ROUTING_MODE, "3"/g' $CONFIG_FILE
-            sed -i 's/ROUTING_MODE, "2"/ROUTING_MODE, "3"/g' $CONFIG_FILE
+          # Гарантируем, что приложение "из коробки" использует твои кастомные правила из AngConfigManager
+          FILE=$(find . -name "MmkvManager.kt" | head -n 1)
+          if [ -n "$FILE" ]; then
+            sed -i 's/ROUTING_MODE, "0"/ROUTING_MODE, "3"/g' $FILE
+            sed -i 's/ROUTING_MODE, "2"/ROUTING_MODE, "3"/g' $FILE
           fi
-
-          # 2. Твой список доменов (включая .ru, .su и .рф (xn--p1ai))
-          RU_DOMAINS="domain:ru,domain:su,domain:xn--p1ai,geosite:yandex,geosite:vk,domain:ozon.ru,domain:wildberries.ru,domain:wb.ru,domain:avito.ru,domain:sberbank.ru,domain:tinkoff.ru,domain:tbank.ru,domain:gosuslugi.ru"
-          
-          # 3. Находим все файлы кода и переводим иероглифы на русский + вставляем домены
-          find . -type f -name "*.kt" -o -name "*.json" -o -name "*.xml" | while read file; do
-            # Перевод системных правил
-            sed -i 's/阻断udp443/Блокировка QUIC (udp443)/g' "$file"
-            sed -i 's/代理Google/Прокси Google/g' "$file"
-            sed -i 's/绕过局域网IP/Локальные IP (Direct)/g' "$file"
-            sed -i 's/绕过局域网域名/Локальные домены (Direct)/g' "$file"
-            sed -i 's/绕过中国公共DNSIP/Публичные DNS IP (Direct)/g' "$file"
-            sed -i 's/绕过中国公共DNS域名/Публичные DNS домены (Direct)/g' "$file"
-            
-            # Превращаем китайский обход в обход РФ
-            sed -i 's/绕过中国IP/RU IP/g' "$file"
-            sed -i 's/绕过中国域名/RU/g' "$file"
-
-            # Вставляем твои списки вместо китайских (cn -> ru)
-            sed -i 's/geoip:cn/geoip:ru/g' "$file"
-            sed -i "s/geosite:cn/$RU_DOMAINS/g" "$file"
-          done
 
       - name: Build libhevtun
         run: |
