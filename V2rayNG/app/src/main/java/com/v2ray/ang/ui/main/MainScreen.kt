@@ -1,30 +1,28 @@
 package com.v2ray.ang.ui.main
 
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.material3.DrawerValue
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ModalNavigationDrawer
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.ScaffoldDefaults
-import androidx.compose.material3.rememberDrawerState
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateMapOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -199,6 +197,7 @@ fun MainScreen(
         }
     ) {
         Scaffold(
+            containerColor = Color.Black, // АБСОЛЮТНО ЧЕРНЫЙ ФОН OLED
             contentWindowInsets = ScaffoldDefaults.contentWindowInsets,
             topBar = {
                 MainTopBar(
@@ -230,7 +229,7 @@ fun MainScreen(
                     onAction = onAction
                 )
             },
-            floatingActionButton = {},
+            floatingActionButton = {}, // Оставляем пустым, кнопка теперь по центру
         ) { innerPadding ->
             val layoutDirection = LocalLayoutDirection.current
 
@@ -239,6 +238,7 @@ fun MainScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(innerPadding)
+                        .background(Color.Black) // Подложка для кибер-стиля
                 ) {
                     if (groups.size > 1) {
                         GroupTabBar(
@@ -256,9 +256,23 @@ fun MainScreen(
                         )
                     }
 
+                    // --- ФУТУРИСТИЧНАЯ КНОПКА ЗАПУСКА ---
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(0.35f), // Занимает 35% верхней части экрана
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CyberPowerButton(
+                            isRunning = isRunning,
+                            onClick = { onAction(MainAction.ToggleService) }
+                        )
+                    }
+
+                    // --- СПИСОК СЕРВЕРОВ ---
                     HorizontalPager(
                         state = pagerState,
-                        modifier = Modifier.fillMaxSize(),
+                        modifier = Modifier.weight(0.65f), // Списки занимают нижние 65% экрана
                         userScrollEnabled = true,
                         beyondViewportPageCount = 1,
                         key = { page -> groups.getOrNull(page)?.id ?: "group-page-$page" }
@@ -295,6 +309,95 @@ fun MainScreen(
                         )
                     }
                 }
+            }
+        }
+    }
+}
+
+// --- НОВЫЙ КОМПОНЕНТ ДЛЯ КИБЕР-КНОПКИ ---
+@Composable
+fun CyberPowerButton(
+    isRunning: Boolean,
+    onClick: () -> Unit
+) {
+    // Анимация пульсации (дыхание)
+    val infiniteTransition = rememberInfiniteTransition(label = "pulse")
+    val pulseScale by infiniteTransition.animateFloat(
+        initialValue = 0.97f,
+        targetValue = 1.03f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1200, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "pulseScale"
+    )
+
+    // Цвета: Выключено (Темно-серый) / Включено (Кибер-Циан)
+    val neonColor by animateColorAsState(
+        targetValue = if (isRunning) Color(0xFF00E5FF) else Color(0xFF333333),
+        animationSpec = tween(500),
+        label = "color"
+    )
+    
+    // Прозрачность свечения
+    val glowAlpha by animateFloatAsState(
+        targetValue = if (isRunning) 0.35f else 0f,
+        animationSpec = tween(500),
+        label = "glow"
+    )
+
+    val scaleModifier = if (isRunning) Modifier.scale(pulseScale) else Modifier
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        // Внешнее радиальное свечение (Glow Effect)
+        Box(
+            modifier = Modifier
+                .size(200.dp)
+                .then(scaleModifier)
+                .clip(CircleShape)
+                .background(
+                    Brush.radialGradient(
+                        colors = listOf(neonColor.copy(alpha = glowAlpha), Color.Transparent)
+                    )
+                )
+        )
+
+        // Физическая кнопка (Матовый темный круг)
+        Box(
+            modifier = Modifier
+                .size(120.dp)
+                .clip(CircleShape)
+                .background(Color(0xFF121212)) // Почти черный для контраста
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null, // Убираем стандартный андроид-ripple, оставляем чистоту
+                    onClick = onClick
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            // Отрисовка значка Power в векторе (Canvas)
+            Canvas(modifier = Modifier.size(46.dp)) {
+                // Кольцо Power
+                drawArc(
+                    color = neonColor,
+                    startAngle = -240f,
+                    sweepAngle = 300f,
+                    useCenter = false,
+                    style = Stroke(width = 8f, cap = StrokeCap.Round)
+                )
+                // Линия Power
+                drawLine(
+                    color = neonColor,
+                    start = Offset(size.width / 2, 0f),
+                    end = Offset(size.width / 2, size.height / 2.5f),
+                    strokeWidth = 8f,
+                    cap = StrokeCap.Round
+                )
             }
         }
     }
