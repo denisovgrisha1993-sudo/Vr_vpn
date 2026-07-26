@@ -30,6 +30,17 @@
     "remarks": "Bypass Russia domains",
     "outboundTag": "direct",
     "domain": [
+      "domain:ru",
+      "geosite:yandex",
+      "geosite:vk",
+      "domain:ozon.ru",
+      "domain:wildberries.ru",
+      "domain:wb.ru",
+      "domain:avito.ru",
+      "domain:sberbank.ru",
+      "domain:tinkoff.ru",
+      "domain:tbank.ru",
+      "domain:gosuslugi.ru",
       "geosite:category-ru"
     ]
   },
