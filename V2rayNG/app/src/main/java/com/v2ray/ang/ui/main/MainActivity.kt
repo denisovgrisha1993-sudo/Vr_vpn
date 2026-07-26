@@ -91,6 +91,24 @@ class MainActivity : HelperBaseComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // --- АВТОМАТИЧЕСКИЙ ИМПОРТ ПРАВИЛ ПРИ ПЕРВОМ ЗАПУСКЕ ---
+        val currentRules = MmkvManager.decodeRoutingRulesets()
+        if (currentRules.isNullOrEmpty()) {
+            lifecycleScope.launch(Dispatchers.IO) {
+                try {
+                    // Загружаем правила из нашего измененного файла в assets (индекс 0)
+                    SettingsManager.resetRoutingRulesetsFromPresets(this@MainActivity, 0)
+                    
+                    // Включаем нужный режим маршрутизации ("AsIs" или другой подходящий из списка)
+                    MmkvManager.encodeSettings(AppConfig.PREF_ROUTING_DOMAIN_STRATEGY, "AsIs")
+                } catch (e: Exception) {
+                    LogUtil.e(AppConfig.TAG, "Failed to auto-import predefined ruleset", e)
+                }
+            }
+        }
+        // --------------------------------------------------------
+
         mainViewModel.onAction(MainAction.Initialize)
 
         checkAndRequestPermission(PermissionType.POST_NOTIFICATIONS) {}
