@@ -92,16 +92,19 @@ class MainActivity : HelperBaseComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // --- АВТОМАТИЧЕСКИЙ ИМПОРТ ПРАВИЛ ПРИ ПЕРВОМ ЗАПУСКЕ ---
-        val currentRules = MmkvManager.decodeRoutingRulesets()
-        if (currentRules.isNullOrEmpty()) {
+        // --- АВТОМАТИЧЕСКИЙ ИМПОРТ ПРАВИЛ ПРИ ПЕРВОМ ЗАПУСКЕ (ЖЕСТКАЯ ПРИВЯЗКА) ---
+        val isRussianSetupDone = MmkvManager.decodeSettingsBool("is_russian_setup_done_v1")
+        if (!isRussianSetupDone) {
             lifecycleScope.launch(Dispatchers.IO) {
                 try {
-                    // Загружаем "Белый список России" (индекс 4 в выпадающем меню)
+                    // Принудительно загружаем "Белый список России" (индекс 4)
                     SettingsManager.resetRoutingRulesetsFromPresets(this@MainActivity, 4)
                     
-                    // Включаем режим маршрутизации "AsIs" для активации правил
+                    // Включаем режим маршрутизации "AsIs"
                     MmkvManager.encodeSettings(AppConfig.PREF_ROUTING_DOMAIN_STRATEGY, "AsIs")
+                    
+                    // Ставим вечную метку, что наша настройка завершена
+                    MmkvManager.encodeSettings("is_russian_setup_done_v1", true)
                 } catch (e: Exception) {
                     LogUtil.e(AppConfig.TAG, "Failed to auto-import predefined ruleset", e)
                 }
