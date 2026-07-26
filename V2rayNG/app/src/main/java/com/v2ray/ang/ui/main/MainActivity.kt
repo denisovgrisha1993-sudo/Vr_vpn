@@ -97,10 +97,10 @@ class MainActivity : HelperBaseComponentActivity() {
         if (currentRules.isNullOrEmpty()) {
             lifecycleScope.launch(Dispatchers.IO) {
                 try {
-                    // Загружаем правила из нашего измененного файла в assets (индекс 0)
-                    SettingsManager.resetRoutingRulesetsFromPresets(this@MainActivity, 0)
+                    // Загружаем "Белый список России" (индекс 4 в выпадающем меню)
+                    SettingsManager.resetRoutingRulesetsFromPresets(this@MainActivity, 4)
                     
-                    // Включаем нужный режим маршрутизации ("AsIs" или другой подходящий из списка)
+                    // Включаем режим маршрутизации "AsIs" для активации правил
                     MmkvManager.encodeSettings(AppConfig.PREF_ROUTING_DOMAIN_STRATEGY, "AsIs")
                 } catch (e: Exception) {
                     LogUtil.e(AppConfig.TAG, "Failed to auto-import predefined ruleset", e)
