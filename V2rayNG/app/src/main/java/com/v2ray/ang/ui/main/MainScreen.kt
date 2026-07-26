@@ -200,7 +200,7 @@ fun MainScreen(
         }
     ) {
         Scaffold(
-            containerColor = Color(0xFF07080A), // Тёмный кибер-фон
+            containerColor = Color(0xFF07080A),
             contentWindowInsets = ScaffoldDefaults.contentWindowInsets,
             topBar = {
                 MainTopBar(
@@ -458,13 +458,15 @@ fun CyberPowerButton(
             )
 
             Canvas(modifier = Modifier.size(50.dp)) {
+                // ИСПРАВЛЕННАЯ ЧАСТЬ: Дуга с разрывом ровно сверху
                 drawArc(
                     color = iconColor,
-                    startAngle = -240f,
+                    startAngle = -60f,
                     sweepAngle = 300f,
                     useCenter = false,
                     style = Stroke(width = 9f, cap = StrokeCap.Round)
                 )
+                // ИСПРАВЛЕННАЯ ЧАСТЬ: Вертикальная палочка сверху к центру
                 drawLine(
                     color = iconColor,
                     start = Offset(size.width / 2, 0f),
