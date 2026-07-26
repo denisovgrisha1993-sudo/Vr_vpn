@@ -17,6 +17,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
@@ -24,7 +25,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.v2ray.ang.compose.LocalDarkTheme
 import com.v2ray.ang.compose.QRCodeDialog
@@ -197,7 +200,7 @@ fun MainScreen(
         }
     ) {
         Scaffold(
-            containerColor = Color.Black, // АБСОЛЮТНО ЧЕРНЫЙ ФОН OLED
+            containerColor = Color.Black, // ГЛУБОКИЙ ЧЕРНЫЙ ФОН
             contentWindowInsets = ScaffoldDefaults.contentWindowInsets,
             topBar = {
                 MainTopBar(
@@ -220,25 +223,14 @@ fun MainScreen(
                     onDelDuplicateConfig = { showDelDuplicateConfirm = true },
                     onDelInvalidConfig = { showDelInvalidConfirm = true }
                 )
-            },
-            bottomBar = {
-                MainBottomBar(
-                    displayText = displayText,
-                    isRunning = isRunning,
-                    isDarkTheme = isDarkTheme,
-                    onAction = onAction
-                )
-            },
-            floatingActionButton = {}, // Оставляем пустым, кнопка теперь по центру
+            }
         ) { innerPadding ->
-            val layoutDirection = LocalLayoutDirection.current
-
             if (groups.isNotEmpty()) {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(innerPadding)
-                        .background(Color.Black) // Подложка для кибер-стиля
+                        .background(Color.Black)
                 ) {
                     if (groups.size > 1) {
                         GroupTabBar(
@@ -256,23 +248,43 @@ fun MainScreen(
                         )
                     }
 
-                    // --- ФУТУРИСТИЧНАЯ КНОПКА ЗАПУСКА ---
-                    Box(
+                    // --- ЗОНА РЕАКТОРА С АНИМАЦИЕЙ ---
+                    Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .weight(0.35f), // Занимает 35% верхней части экрана
-                        contentAlignment = Alignment.Center
+                            .weight(0.50f),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
                     ) {
                         CyberPowerButton(
                             isRunning = isRunning,
                             onClick = { onAction(MainAction.ToggleService) }
+                        )
+
+                        Spacer(modifier = Modifier.height(24.dp))
+
+                        // Кибер-типографика статуса (HUD Style)
+                        Text(
+                            text = if (isRunning) "S Y S T E M   O N L I N E" else "S Y S T E M   O F F L I N E",
+                            color = if (isRunning) Color(0xFF00E5FF) else Color(0xFF444444),
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Black,
+                            letterSpacing = 4.sp
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = if (isRunning) "SECURE TUNNEL ESTABLISHED" else "AWAITING CONNECTION",
+                            color = if (isRunning) Color(0xFF00E5FF).copy(alpha = 0.6f) else Color(0xFF333333),
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Medium,
+                            letterSpacing = 2.sp
                         )
                     }
 
                     // --- СПИСОК СЕРВЕРОВ ---
                     HorizontalPager(
                         state = pagerState,
-                        modifier = Modifier.weight(0.65f), // Списки занимают нижние 65% экрана
+                        modifier = Modifier.weight(0.50f),
                         userScrollEnabled = true,
                         beyondViewportPageCount = 1,
                         key = { page -> groups.getOrNull(page)?.id ?: "group-page-$page" }
@@ -300,12 +312,7 @@ fun MainScreen(
                                 if (confirmRemove) showRemoveConfirm = guid
                                 else onAction(MainAction.RemoveServer(guid))
                             },
-                            contentPadding = PaddingValues(
-                                start = 0.dp,
-                                top = 0.dp,
-                                end = 0.dp,
-                                bottom = 80.dp
-                            )
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
                         )
                     }
                 }
@@ -314,17 +321,17 @@ fun MainScreen(
     }
 }
 
-// --- НОВЫЙ КОМПОНЕНТ ДЛЯ КИБЕР-КНОПКИ ---
 @Composable
 fun CyberPowerButton(
     isRunning: Boolean,
     onClick: () -> Unit
 ) {
-    // Анимация пульсации (дыхание)
-    val infiniteTransition = rememberInfiniteTransition(label = "pulse")
+    val infiniteTransition = rememberInfiniteTransition(label = "pulse_rotate")
+    
+    // Анимация пульсации
     val pulseScale by infiniteTransition.animateFloat(
-        initialValue = 0.97f,
-        targetValue = 1.03f,
+        initialValue = 0.95f,
+        targetValue = 1.05f,
         animationSpec = infiniteRepeatable(
             animation = tween(1200, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
@@ -332,16 +339,24 @@ fun CyberPowerButton(
         label = "pulseScale"
     )
 
-    // Цвета: Выключено (Темно-серый) / Включено (Кибер-Циан)
-    val neonColor by animateColorAsState(
-        targetValue = if (isRunning) Color(0xFF00E5FF) else Color(0xFF333333),
-        animationSpec = tween(500),
-        label = "color"
+    // Анимация бесконечного вращения колец при работе
+    val rotation by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(if (isRunning) 3000 else 0, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "rotation"
     )
-    
-    // Прозрачность свечения
+
+    val neonColor = Color(0xFF00E5FF)
+    val neonDarkColor = Color(0xFF005963)
+    val offColor = Color(0xFF222222)
+    val innerRingColor = if (isRunning) Color(0xFFB388FF) else Color(0xFF1A1A1A)
+
     val glowAlpha by animateFloatAsState(
-        targetValue = if (isRunning) 0.35f else 0f,
+        targetValue = if (isRunning) 0.5f else 0f,
         animationSpec = tween(500),
         label = "glow"
     )
@@ -349,15 +364,13 @@ fun CyberPowerButton(
     val scaleModifier = if (isRunning) Modifier.scale(pulseScale) else Modifier
 
     Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp),
+        modifier = Modifier.size(260.dp),
         contentAlignment = Alignment.Center
     ) {
-        // Внешнее радиальное свечение (Glow Effect)
+        // Внешнее радиальное свечение (Glow)
         Box(
             modifier = Modifier
-                .size(200.dp)
+                .size(260.dp)
                 .then(scaleModifier)
                 .clip(CircleShape)
                 .background(
@@ -367,35 +380,72 @@ fun CyberPowerButton(
                 )
         )
 
-        // Физическая кнопка (Матовый темный круг)
+        // Вращающиеся кольца
+        Canvas(modifier = Modifier
+            .size(220.dp)
+            .rotate(if (isRunning) rotation else 0f)
+        ) {
+            // Внешнее градиентное кольцо с разрывами (эффект сканера)
+            drawArc(
+                brush = Brush.sweepGradient(
+                    colors = if (isRunning) listOf(neonDarkColor, neonColor, neonDarkColor) 
+                             else listOf(offColor, offColor)
+                ),
+                startAngle = 0f,
+                sweepAngle = 360f,
+                useCenter = false,
+                style = Stroke(width = 8f, cap = StrokeCap.Round)
+            )
+            
+            // Внутреннее кольцо (крутится в обратную сторону)
+            drawArc(
+                color = innerRingColor,
+                startAngle = -rotation * 2, // Вращение в обратную сторону с двойной скоростью
+                sweepAngle = 180f, // Полукольцо для эффекта футуризма
+                useCenter = false,
+                style = Stroke(width = 4f, cap = StrokeCap.Round)
+            )
+            drawArc(
+                color = innerRingColor,
+                startAngle = -rotation * 2 + 180f,
+                sweepAngle = 90f,
+                useCenter = false,
+                style = Stroke(width = 4f, cap = StrokeCap.Round)
+            )
+        }
+
+        // Физическая плавающая кнопка
         Box(
             modifier = Modifier
-                .size(120.dp)
+                .size(130.dp)
                 .clip(CircleShape)
-                .background(Color(0xFF121212)) // Почти черный для контраста
+                .background(Color(0xFF0A0A0A))
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
-                    indication = null, // Убираем стандартный андроид-ripple, оставляем чистоту
+                    indication = null,
                     onClick = onClick
                 ),
             contentAlignment = Alignment.Center
         ) {
-            // Отрисовка значка Power в векторе (Canvas)
-            Canvas(modifier = Modifier.size(46.dp)) {
-                // Кольцо Power
+            // Иконка Power
+            val iconColor by animateColorAsState(
+                targetValue = if (isRunning) neonColor else Color(0xFF555555),
+                animationSpec = tween(300), label = "iconColor"
+            )
+            
+            Canvas(modifier = Modifier.size(52.dp)) {
                 drawArc(
-                    color = neonColor,
+                    color = iconColor,
                     startAngle = -240f,
                     sweepAngle = 300f,
                     useCenter = false,
-                    style = Stroke(width = 8f, cap = StrokeCap.Round)
+                    style = Stroke(width = 10f, cap = StrokeCap.Round)
                 )
-                // Линия Power
                 drawLine(
-                    color = neonColor,
+                    color = iconColor,
                     start = Offset(size.width / 2, 0f),
-                    end = Offset(size.width / 2, size.height / 2.5f),
-                    strokeWidth = 8f,
+                    end = Offset(size.width / 2, size.height / 2.3f),
+                    strokeWidth = 10f,
                     cap = StrokeCap.Round
                 )
             }
