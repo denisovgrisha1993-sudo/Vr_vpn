@@ -293,41 +293,105 @@ fun MainScreen(
                                 shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
                             )
                     ) {
-                        HorizontalPager(
-                            state = pagerState,
-                            modifier = Modifier.fillMaxSize(),
-                            userScrollEnabled = true,
-                            beyondViewportPageCount = 1,
-                            key = { page -> groups.getOrNull(page)?.id ?: "group-page-$page" }
-                        ) { page ->
-                            val group = groups.getOrNull(page) ?: return@HorizontalPager
+                        Column(modifier = Modifier.fillMaxSize()) {
+                            
+                            // НОВЫЙ БЛОК: Виджет подписки
+                            SubscriptionWidget()
 
-                            GroupPagerPage(
-                                groupId = group.id,
-                                mainViewModel = mainViewModel,
-                                selectedGuid = selectedGuid,
-                                doubleColumnDisplay = doubleColumnDisplay,
-                                confirmRemove = confirmRemove,
-                                searchQuery = searchQuery,
-                                lazyListStates = lazyListStates,
-                                lazyGridStates = lazyGridStates,
-                                onSelectServer = { guid -> onAction(MainAction.SelectServer(guid)) },
-                                onEditServer = { guid, profile -> onAction(MainAction.EditServer(guid, profile)) },
-                                onShareServer = { guid, profile ->
-                                    shareTarget = Triple(guid, profile, false)
-                                },
-                                onMoreServer = { guid, profile ->
-                                    shareTarget = Triple(guid, profile, true)
-                                },
-                                onRemoveServer = { guid ->
-                                    if (confirmRemove) showRemoveConfirm = guid
-                                    else onAction(MainAction.RemoveServer(guid))
-                                },
-                                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp)
-                            )
+                            HorizontalPager(
+                                state = pagerState,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .weight(1f),
+                                userScrollEnabled = true,
+                                beyondViewportPageCount = 1,
+                                key = { page -> groups.getOrNull(page)?.id ?: "group-page-$page" }
+                            ) { page ->
+                                val group = groups.getOrNull(page) ?: return@HorizontalPager
+
+                                GroupPagerPage(
+                                    groupId = group.id,
+                                    mainViewModel = mainViewModel,
+                                    selectedGuid = selectedGuid,
+                                    doubleColumnDisplay = doubleColumnDisplay,
+                                    confirmRemove = confirmRemove,
+                                    searchQuery = searchQuery,
+                                    lazyListStates = lazyListStates,
+                                    lazyGridStates = lazyGridStates,
+                                    onSelectServer = { guid -> onAction(MainAction.SelectServer(guid)) },
+                                    onEditServer = { guid, profile -> onAction(MainAction.EditServer(guid, profile)) },
+                                    onShareServer = { guid, profile ->
+                                        shareTarget = Triple(guid, profile, false)
+                                    },
+                                    onMoreServer = { guid, profile ->
+                                        shareTarget = Triple(guid, profile, true)
+                                    },
+                                    onRemoveServer = { guid ->
+                                        if (confirmRemove) showRemoveConfirm = guid
+                                        else onAction(MainAction.RemoveServer(guid))
+                                    },
+                                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                                )
+                            }
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+// --- ВИДЖЕТ ПОДПИСКИ ---
+@Composable
+fun SubscriptionWidget() {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 16.dp, end = 16.dp, top = 20.dp, bottom = 8.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .background(Color(0xFF13151C))
+            .border(
+                width = 1.dp,
+                color = Color(0xFF1E212B),
+                shape = RoundedCornerShape(16.dp)
+            )
+            .padding(16.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column {
+                Text(
+                    text = "ПРЕМИУМ АКТИВЕН",
+                    color = Color(0xFF00E5FF),
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = 1.sp
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = "127.3 GB / ∞",
+                    color = Color.White,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+            Column(horizontalAlignment = Alignment.End) {
+                Text(
+                    text = "Истекает:",
+                    color = Color(0xFF6C7086),
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = "05.08.2026",
+                    color = Color.White,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold
+                )
             }
         }
     }
@@ -360,7 +424,7 @@ fun CyberPowerButton(
         label = "rotation"
     )
 
-    // Градиент от Циана к Фиолетовому (как на макете)
+    // Градиент от Циана к Фиолетовому
     val cyanGlow = Color(0xFF00E5FF)
     val purpleGlow = Color(0xFF9D00FF)
     val darkGlow = Color(0xFF12131A)
