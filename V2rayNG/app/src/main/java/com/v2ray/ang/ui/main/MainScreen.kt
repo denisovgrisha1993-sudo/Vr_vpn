@@ -339,12 +339,12 @@ fun CyberPowerButton(
         label = "pulseScale"
     )
 
-    // Анимация бесконечного вращения колец при работе
+    // Анимация бесконечного вращения (ТЕПЕРЬ БЕЗ КРАШЕЙ)
     val rotation by infiniteTransition.animateFloat(
         initialValue = 0f,
         targetValue = 360f,
         animationSpec = infiniteRepeatable(
-            animation = tween(if (isRunning) 3000 else 0, easing = LinearEasing),
+            animation = tween(3000, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
         ),
         label = "rotation"
@@ -380,10 +380,10 @@ fun CyberPowerButton(
                 )
         )
 
-        // Вращающиеся кольца
+        // Вращающиеся кольца (Вращаем только если isRunning == true)
         Canvas(modifier = Modifier
             .size(220.dp)
-            .rotate(if (isRunning) rotation else 0f)
+            .rotate(if (isRunning) rotation else 0f) 
         ) {
             // Внешнее градиентное кольцо с разрывами (эффект сканера)
             drawArc(
