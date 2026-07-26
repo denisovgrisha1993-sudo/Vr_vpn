@@ -4,6 +4,7 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
@@ -12,6 +13,7 @@ import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -49,13 +51,11 @@ fun MainScreen(
     val groups = uiState.groups
     val isLoading by mainViewModel.isLoading.collectAsStateWithLifecycle()
     val isRunning = uiState.isRunning
-    val displayText = uiState.statusText
     val selectedGuid = uiState.selectedGuid
     val doubleColumnDisplay = uiState.doubleColumnDisplay
     val confirmRemove = uiState.confirmRemove
     val shareQRCodeBitmap = uiState.shareQRCodeBitmap
 
-    val isDarkTheme = LocalDarkTheme.current
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     var showSearch by remember { mutableStateOf(false) }
@@ -200,7 +200,7 @@ fun MainScreen(
         }
     ) {
         Scaffold(
-            containerColor = Color.Black, // ГЛУБОКИЙ ЧЕРНЫЙ ФОН
+            containerColor = Color(0xFF07080A), // Тёмный кибер-фон
             contentWindowInsets = ScaffoldDefaults.contentWindowInsets,
             topBar = {
                 MainTopBar(
@@ -230,7 +230,7 @@ fun MainScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(innerPadding)
-                        .background(Color.Black)
+                        .background(Color(0xFF07080A))
                 ) {
                     if (groups.size > 1) {
                         GroupTabBar(
@@ -248,11 +248,11 @@ fun MainScreen(
                         )
                     }
 
-                    // --- ЗОНА РЕАКТОРА С АНИМАЦИЕЙ ---
+                    // --- РЕАКТОР И СТАТУС ---
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .weight(0.50f),
+                            .weight(0.52f),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center
                     ) {
@@ -261,59 +261,71 @@ fun MainScreen(
                             onClick = { onAction(MainAction.ToggleService) }
                         )
 
-                        Spacer(modifier = Modifier.height(24.dp))
+                        Spacer(modifier = Modifier.height(20.dp))
 
-                        // Кибер-типографика статуса (HUD Style)
                         Text(
                             text = if (isRunning) "S Y S T E M   O N L I N E" else "S Y S T E M   O F F L I N E",
-                            color = if (isRunning) Color(0xFF00E5FF) else Color(0xFF444444),
-                            fontSize = 14.sp,
+                            color = if (isRunning) Color(0xFF00E5FF) else Color(0xFF555555),
+                            fontSize = 13.sp,
                             fontWeight = FontWeight.Black,
-                            letterSpacing = 4.sp
+                            letterSpacing = 3.sp
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = if (isRunning) "SECURE TUNNEL ESTABLISHED" else "AWAITING CONNECTION",
+                            text = if (isRunning) "SECURE TUNNEL ACTIVE" else "TAP TO INITIALIZE",
                             color = if (isRunning) Color(0xFF00E5FF).copy(alpha = 0.6f) else Color(0xFF333333),
                             fontSize = 10.sp,
-                            fontWeight = FontWeight.Medium,
-                            letterSpacing = 2.sp
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.5.sp
                         )
                     }
 
-                    // --- СПИСОК СЕРВЕРОВ ---
-                    HorizontalPager(
-                        state = pagerState,
-                        modifier = Modifier.weight(0.50f),
-                        userScrollEnabled = true,
-                        beyondViewportPageCount = 1,
-                        key = { page -> groups.getOrNull(page)?.id ?: "group-page-$page" }
-                    ) { page ->
-                        val group = groups.getOrNull(page) ?: return@HorizontalPager
+                    // --- СПИСОК СЕРВЕРОВ С МАТОВОЙ ПОДЛОЖКОЙ ---
+                    Box(
+                        modifier = Modifier
+                            .weight(0.48f)
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
+                            .background(Color(0xFF0F1015)) // Тёмная подложка карточек
+                            .border(
+                                width = 1.dp,
+                                color = Color(0xFF1F222C),
+                                shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
+                            )
+                    ) {
+                        HorizontalPager(
+                            state = pagerState,
+                            modifier = Modifier.fillMaxSize(),
+                            userScrollEnabled = true,
+                            beyondViewportPageCount = 1,
+                            key = { page -> groups.getOrNull(page)?.id ?: "group-page-$page" }
+                        ) { page ->
+                            val group = groups.getOrNull(page) ?: return@HorizontalPager
 
-                        GroupPagerPage(
-                            groupId = group.id,
-                            mainViewModel = mainViewModel,
-                            selectedGuid = selectedGuid,
-                            doubleColumnDisplay = doubleColumnDisplay,
-                            confirmRemove = confirmRemove,
-                            searchQuery = searchQuery,
-                            lazyListStates = lazyListStates,
-                            lazyGridStates = lazyGridStates,
-                            onSelectServer = { guid -> onAction(MainAction.SelectServer(guid)) },
-                            onEditServer = { guid, profile -> onAction(MainAction.EditServer(guid, profile)) },
-                            onShareServer = { guid, profile ->
-                                shareTarget = Triple(guid, profile, false)
-                            },
-                            onMoreServer = { guid, profile ->
-                                shareTarget = Triple(guid, profile, true)
-                            },
-                            onRemoveServer = { guid ->
-                                if (confirmRemove) showRemoveConfirm = guid
-                                else onAction(MainAction.RemoveServer(guid))
-                            },
-                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
-                        )
+                            GroupPagerPage(
+                                groupId = group.id,
+                                mainViewModel = mainViewModel,
+                                selectedGuid = selectedGuid,
+                                doubleColumnDisplay = doubleColumnDisplay,
+                                confirmRemove = confirmRemove,
+                                searchQuery = searchQuery,
+                                lazyListStates = lazyListStates,
+                                lazyGridStates = lazyGridStates,
+                                onSelectServer = { guid -> onAction(MainAction.SelectServer(guid)) },
+                                onEditServer = { guid, profile -> onAction(MainAction.EditServer(guid, profile)) },
+                                onShareServer = { guid, profile ->
+                                    shareTarget = Triple(guid, profile, false)
+                                },
+                                onMoreServer = { guid, profile ->
+                                    shareTarget = Triple(guid, profile, true)
+                                },
+                                onRemoveServer = { guid ->
+                                    if (confirmRemove) showRemoveConfirm = guid
+                                    else onAction(MainAction.RemoveServer(guid))
+                                },
+                                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp)
+                            )
+                        }
                     }
                 }
             }
@@ -326,100 +338,112 @@ fun CyberPowerButton(
     isRunning: Boolean,
     onClick: () -> Unit
 ) {
-    val infiniteTransition = rememberInfiniteTransition(label = "pulse_rotate")
-    
-    // Анимация пульсации
+    val infiniteTransition = rememberInfiniteTransition(label = "cyber_anim")
+
     val pulseScale by infiniteTransition.animateFloat(
-        initialValue = 0.95f,
-        targetValue = 1.05f,
+        initialValue = 0.97f,
+        targetValue = 1.03f,
         animationSpec = infiniteRepeatable(
-            animation = tween(1200, easing = FastOutSlowInEasing),
+            animation = tween(1500, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
         ),
         label = "pulseScale"
     )
 
-    // Анимация бесконечного вращения (ТЕПЕРЬ БЕЗ КРАШЕЙ)
     val rotation by infiniteTransition.animateFloat(
         initialValue = 0f,
         targetValue = 360f,
         animationSpec = infiniteRepeatable(
-            animation = tween(3000, easing = LinearEasing),
+            animation = tween(4000, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
         ),
         label = "rotation"
     )
 
-    val neonColor = Color(0xFF00E5FF)
-    val neonDarkColor = Color(0xFF005963)
-    val offColor = Color(0xFF222222)
-    val innerRingColor = if (isRunning) Color(0xFFB388FF) else Color(0xFF1A1A1A)
+    // Градиент от Циана к Фиолетовому (как на макете)
+    val cyanGlow = Color(0xFF00E5FF)
+    val purpleGlow = Color(0xFF9D00FF)
+    val darkGlow = Color(0xFF12131A)
 
     val glowAlpha by animateFloatAsState(
-        targetValue = if (isRunning) 0.5f else 0f,
-        animationSpec = tween(500),
-        label = "glow"
+        targetValue = if (isRunning) 0.55f else 0f,
+        animationSpec = tween(600),
+        label = "glowAlpha"
     )
 
     val scaleModifier = if (isRunning) Modifier.scale(pulseScale) else Modifier
 
     Box(
-        modifier = Modifier.size(260.dp),
+        modifier = Modifier.size(250.dp),
         contentAlignment = Alignment.Center
     ) {
-        // Внешнее радиальное свечение (Glow)
+        // Радиальный неоновый туман сзади
         Box(
             modifier = Modifier
-                .size(260.dp)
+                .size(250.dp)
                 .then(scaleModifier)
                 .clip(CircleShape)
                 .background(
                     Brush.radialGradient(
-                        colors = listOf(neonColor.copy(alpha = glowAlpha), Color.Transparent)
+                        colors = listOf(
+                            cyanGlow.copy(alpha = glowAlpha),
+                            purpleGlow.copy(alpha = glowAlpha * 0.5f),
+                            Color.Transparent
+                        )
                     )
                 )
         )
 
-        // Вращающиеся кольца (Вращаем только если isRunning == true)
-        Canvas(modifier = Modifier
-            .size(220.dp)
-            .rotate(if (isRunning) rotation else 0f) 
+        // Градиентные неоновые кольца
+        Canvas(
+            modifier = Modifier
+                .size(210.dp)
+                .rotate(if (isRunning) rotation else 0f)
         ) {
-            // Внешнее градиентное кольцо с разрывами (эффект сканера)
+            val strokeWidth = 14f
+
+            // Внешняя толстая двухцветная дуга
             drawArc(
                 brush = Brush.sweepGradient(
-                    colors = if (isRunning) listOf(neonDarkColor, neonColor, neonDarkColor) 
-                             else listOf(offColor, offColor)
+                    colors = if (isRunning) listOf(cyanGlow, purpleGlow, cyanGlow)
+                             else listOf(darkGlow, darkGlow)
                 ),
                 startAngle = 0f,
                 sweepAngle = 360f,
                 useCenter = false,
-                style = Stroke(width = 8f, cap = StrokeCap.Round)
+                style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
             )
-            
-            // Внутреннее кольцо (крутится в обратную сторону)
+
+            // Внутреннее аккуратное кольцо
             drawArc(
-                color = innerRingColor,
-                startAngle = -rotation * 2, // Вращение в обратную сторону с двойной скоростью
-                sweepAngle = 180f, // Полукольцо для эффекта футуризма
-                useCenter = false,
-                style = Stroke(width = 4f, cap = StrokeCap.Round)
-            )
-            drawArc(
-                color = innerRingColor,
-                startAngle = -rotation * 2 + 180f,
-                sweepAngle = 90f,
+                color = if (isRunning) cyanGlow.copy(alpha = 0.8f) else Color(0xFF1E202B),
+                startAngle = -rotation * 1.5f,
+                sweepAngle = 220f,
                 useCenter = false,
                 style = Stroke(width = 4f, cap = StrokeCap.Round)
             )
         }
 
-        // Физическая плавающая кнопка
+        // Объемная 3D кнопка-шашка по центру
         Box(
             modifier = Modifier
-                .size(130.dp)
+                .size(135.dp)
                 .clip(CircleShape)
-                .background(Color(0xFF0A0A0A))
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(Color(0xFF1E212B), Color(0xFF0C0D12))
+                    )
+                )
+                .border(
+                    width = 2.dp,
+                    brush = Brush.verticalGradient(
+                        colors = listOf(
+                            if (isRunning) cyanGlow else Color(0xFF2A2D3A),
+                            Color(0xFF10121A)
+                        )
+                    ),
+                    shape = CircleShape
+                )
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null,
@@ -427,25 +451,25 @@ fun CyberPowerButton(
                 ),
             contentAlignment = Alignment.Center
         ) {
-            // Иконка Power
             val iconColor by animateColorAsState(
-                targetValue = if (isRunning) neonColor else Color(0xFF555555),
-                animationSpec = tween(300), label = "iconColor"
+                targetValue = if (isRunning) cyanGlow else Color(0xFF4A4E61),
+                animationSpec = tween(300),
+                label = "iconColor"
             )
-            
-            Canvas(modifier = Modifier.size(52.dp)) {
+
+            Canvas(modifier = Modifier.size(50.dp)) {
                 drawArc(
                     color = iconColor,
                     startAngle = -240f,
                     sweepAngle = 300f,
                     useCenter = false,
-                    style = Stroke(width = 10f, cap = StrokeCap.Round)
+                    style = Stroke(width = 9f, cap = StrokeCap.Round)
                 )
                 drawLine(
                     color = iconColor,
                     start = Offset(size.width / 2, 0f),
                     end = Offset(size.width / 2, size.height / 2.3f),
-                    strokeWidth = 10f,
+                    strokeWidth = 9f,
                     cap = StrokeCap.Round
                 )
             }
