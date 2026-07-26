@@ -3,14 +3,11 @@ package com.v2ray.ang.ui.main
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -29,7 +26,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -40,7 +36,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.LineBreak
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -48,9 +43,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.v2ray.ang.R
 import com.v2ray.ang.compose.ReorderableGridItem
 import com.v2ray.ang.compose.ReorderableListItem
-import com.v2ray.ang.compose.colorConfigType
-import com.v2ray.ang.compose.colorPing
-import com.v2ray.ang.compose.colorPingRed
 import com.v2ray.ang.compose.verticalScrollbar
 import com.v2ray.ang.dto.entities.ProfileItem
 import com.v2ray.ang.dto.entities.ServersCache
@@ -209,7 +201,6 @@ private fun ServerListPage(
                                 onRemoveServer = onRemoveServer
                             )
                         }
-                        // ItemDivider удален для чистоты Glassmorphism
                     }
                 } else {
                     ServerItemRow(
@@ -222,7 +213,6 @@ private fun ServerListPage(
                         onMoreServer = onMoreServer,
                         onRemoveServer = onRemoveServer
                     )
-                    // ItemDivider удален
                 }
             }
         }
@@ -296,7 +286,6 @@ private fun ServerItemColumn(
             onRemove = { onRemoveServer(serverCache.guid) },
             onMore = { onMoreServer(serverCache.guid, profile) }
         )
-        // ItemDivider удален
     }
 }
 
@@ -325,7 +314,7 @@ fun ServerListItem(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .padding(vertical = 6.dp) // Отступ между карточками
+            .padding(vertical = 6.dp)
             .clip(RoundedCornerShape(20.dp))
             .background(bgColor)
             .border(
@@ -339,10 +328,10 @@ fun ServerListItem(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(horizontal = 16.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Флаг страны или иконка
+            // Флаг страны или иконка глобуса
             Box(
                 modifier = Modifier
                     .size(46.dp)
@@ -354,12 +343,7 @@ fun ServerListItem(
                 if (flag != null) {
                     Text(text = flag, fontSize = 24.sp)
                 } else {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_menu_network), // Стандартная иконка, если флаг не найден
-                        contentDescription = null,
-                        tint = if (isSelected) Color(0xFF00E5FF) else Color(0xFF6C7086),
-                        modifier = Modifier.size(24.dp)
-                    )
+                    Text(text = "🌐", fontSize = 22.sp)
                 }
             }
 
@@ -392,14 +376,15 @@ fun ServerListItem(
                 }
             }
 
-            // Минималистичная стрелочка вместо кучи кнопок
-            Text(
-                text = "❯",
-                color = if (isSelected) Color(0xFF00E5FF) else Color(0xFF4A4D5C),
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Black,
-                modifier = Modifier.padding(start = 8.dp)
-            )
+            // Иконка "Три точки" для вызова меню (редактирование, шаринг, удаление)
+            IconButton(onClick = onMore, modifier = Modifier.size(32.dp)) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_more_vert_24dp),
+                    contentDescription = "Menu",
+                    tint = if (isSelected) Color(0xFF00E5FF) else Color(0xFF6C7086),
+                    modifier = Modifier.size(24.dp)
+                )
+            }
         }
     }
 }
