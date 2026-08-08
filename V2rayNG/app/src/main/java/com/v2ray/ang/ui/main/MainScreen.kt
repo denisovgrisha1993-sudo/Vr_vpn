@@ -1,5 +1,6 @@
 package com.v2ray.ang.ui.main
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
@@ -14,6 +15,8 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -286,7 +289,7 @@ fun MainScreen(
                             .weight(0.48f)
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
-                            .background(Color(0xFF0F1015)) // Тёмная подложка карточек
+                            .background(Color(0xFF0F1015))
                             .border(
                                 width = 1.dp,
                                 color = Color(0xFF1F222C),
@@ -294,7 +297,7 @@ fun MainScreen(
                             )
                     ) {
                         Column(modifier = Modifier.fillMaxSize()) {
-                            // ИНСТРУКЦИЯ ПО ПОДКЛЮЧЕНИЮ
+                            // Встроенный баннер
                             VRInstructionBanner()
 
                             HorizontalPager(
@@ -339,6 +342,105 @@ fun MainScreen(
 }
 
 @Composable
+fun VRInstructionBanner(
+    onDismiss: () -> Unit = {}
+) {
+    var isVisible by remember { mutableStateOf(true) }
+
+    AnimatedVisibility(visible = isVisible) {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp)
+                .border(1.dp, Color(0x33FFFFFF), RoundedCornerShape(16.dp)),
+            color = Color(0xCC121212),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "🚀 Быстрый старт OneTap VR",
+                        color = Color(0xFF00FF88),
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    IconButton(
+                        onClick = {
+                            isVisible = false
+                            onDismiss()
+                        },
+                        modifier = Modifier.size(24.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Закрыть",
+                            tint = Color.Gray
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                InstructionStep(
+                    number = "1", 
+                    text = "Зайдите в Telegram-бот @one_tap_vpn_bot и получите QR-код подписки."
+                )
+                InstructionStep(
+                    number = "2", 
+                    text = "В этом приложении на шлеме нажмите «+» в верхнем углу экрана."
+                )
+                InstructionStep(
+                    number = "3", 
+                    text = "Выберите «Импорт из QR-кода» и наведите камеру очков на QR-код."
+                )
+                InstructionStep(
+                    number = "4", 
+                    text = "Выберите появившийся сервер и нажмите фиолетовую кнопку подключения!"
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun InstructionStep(number: String, text: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.Top
+    ) {
+        Box(
+            modifier = Modifier
+                .padding(top = 2.dp)
+                .size(20.dp)
+                .background(Color(0xFF8A2BE2), RoundedCornerShape(10.dp)),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = number,
+                color = Color.White,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
+        Spacer(modifier = Modifier.width(10.dp))
+        Text(
+            text = text,
+            color = Color.White,
+            fontSize = 13.sp,
+            lineHeight = 17.sp
+        )
+    }
+}
+
+@Composable
 fun CyberPowerButton(
     isRunning: Boolean,
     onClick: () -> Unit
@@ -365,7 +467,6 @@ fun CyberPowerButton(
         label = "rotation"
     )
 
-    // Градиент от Циана к Фиолетовому
     val cyanGlow = Color(0xFF00E5FF)
     val purpleGlow = Color(0xFF9D00FF)
     val darkGlow = Color(0xFF12131A)
@@ -382,7 +483,6 @@ fun CyberPowerButton(
         modifier = Modifier.size(250.dp),
         contentAlignment = Alignment.Center
     ) {
-        // Радиальный неоновый туман сзади
         Box(
             modifier = Modifier
                 .size(250.dp)
@@ -399,7 +499,6 @@ fun CyberPowerButton(
                 )
         )
 
-        // Градиентные неоновые кольца
         Canvas(
             modifier = Modifier
                 .size(210.dp)
@@ -407,7 +506,6 @@ fun CyberPowerButton(
         ) {
             val strokeWidth = 14f
 
-            // Внешняя толстая двухцветная дуга
             drawArc(
                 brush = Brush.sweepGradient(
                     colors = if (isRunning) listOf(cyanGlow, purpleGlow, cyanGlow)
@@ -419,7 +517,6 @@ fun CyberPowerButton(
                 style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
             )
 
-            // Внутреннее аккуратное кольцо
             drawArc(
                 color = if (isRunning) cyanGlow.copy(alpha = 0.8f) else Color(0xFF1E202B),
                 startAngle = -rotation * 1.5f,
@@ -429,7 +526,6 @@ fun CyberPowerButton(
             )
         }
 
-        // Объемная 3D кнопка-шашка по центру
         Box(
             modifier = Modifier
                 .size(135.dp)
@@ -463,7 +559,6 @@ fun CyberPowerButton(
             )
 
             Canvas(modifier = Modifier.size(50.dp)) {
-                // ИСПРАВЛЕННАЯ ЧАСТЬ: Дуга с разрывом ровно сверху
                 drawArc(
                     color = iconColor,
                     startAngle = -60f,
@@ -471,7 +566,6 @@ fun CyberPowerButton(
                     useCenter = false,
                     style = Stroke(width = 9f, cap = StrokeCap.Round)
                 )
-                // ИСПРАВЛЕННАЯ ЧАСТЬ: Вертикальная палочка сверху к центру
                 drawLine(
                     color = iconColor,
                     start = Offset(size.width / 2, 0f),
