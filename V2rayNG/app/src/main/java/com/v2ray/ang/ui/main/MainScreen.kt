@@ -15,8 +15,6 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -29,7 +27,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -297,8 +294,7 @@ fun MainScreen(
                             )
                     ) {
                         Column(modifier = Modifier.fillMaxSize()) {
-                            // Встроенный баннер
-                            VRInstructionBanner()
+                            InlineVRInstructionBanner()
 
                             HorizontalPager(
                                 state = pagerState,
@@ -342,9 +338,7 @@ fun MainScreen(
 }
 
 @Composable
-fun VRInstructionBanner(
-    onDismiss: () -> Unit = {}
-) {
+private fun InlineVRInstructionBanner() {
     var isVisible by remember { mutableStateOf(true) }
 
     AnimatedVisibility(visible = isVisible) {
@@ -370,36 +364,46 @@ fun VRInstructionBanner(
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold
                     )
-                    IconButton(
-                        onClick = {
-                            isVisible = false
-                            onDismiss()
-                        },
-                        modifier = Modifier.size(24.dp)
+                    Box(
+                        modifier = Modifier
+                            .size(24.dp)
+                            .clickable { isVisible = false },
+                        contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = "Закрыть",
-                            tint = Color.Gray
-                        )
+                        Canvas(modifier = Modifier.size(14.dp)) {
+                            drawLine(
+                                color = Color.Gray,
+                                start = Offset(0f, 0f),
+                                end = Offset(size.width, size.height),
+                                strokeWidth = 3f,
+                                cap = StrokeCap.Round
+                            )
+                            drawLine(
+                                color = Color.Gray,
+                                start = Offset(size.width, 0f),
+                                end = Offset(0f, size.height),
+                                strokeWidth = 3f,
+                                cap = StrokeCap.Round
+                            )
+                        }
                     }
                 }
 
                 Spacer(modifier = Modifier.height(10.dp))
 
-                InstructionStep(
+                InlineInstructionStep(
                     number = "1", 
                     text = "Зайдите в Telegram-бот @one_tap_vpn_bot и получите QR-код подписки."
                 )
-                InstructionStep(
+                InlineInstructionStep(
                     number = "2", 
                     text = "В этом приложении на шлеме нажмите «+» в верхнем углу экрана."
                 )
-                InstructionStep(
+                InlineInstructionStep(
                     number = "3", 
                     text = "Выберите «Импорт из QR-кода» и наведите камеру очков на QR-код."
                 )
-                InstructionStep(
+                InlineInstructionStep(
                     number = "4", 
                     text = "Выберите появившийся сервер и нажмите фиолетовую кнопку подключения!"
                 )
@@ -409,7 +413,7 @@ fun VRInstructionBanner(
 }
 
 @Composable
-private fun InstructionStep(number: String, text: String) {
+private fun InlineInstructionStep(number: String, text: String) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
