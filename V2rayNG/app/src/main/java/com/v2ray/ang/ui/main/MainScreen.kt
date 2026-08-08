@@ -342,17 +342,15 @@ private fun InlineVRInstructionBanner() {
     var isVisible by remember { mutableStateOf(true) }
 
     AnimatedVisibility(visible = isVisible) {
-        Surface(
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 8.dp)
-                .border(1.dp, Color(0x33FFFFFF), RoundedCornerShape(16.dp)),
-            color = Color(0xCC121212),
-            shape = RoundedCornerShape(16.dp)
+                .background(Color(0xCC121212), RoundedCornerShape(16.dp))
+                .border(1.dp, Color(0x33FFFFFF), RoundedCornerShape(16.dp))
+                .padding(16.dp)
         ) {
-            Column(
-                modifier = Modifier.padding(16.dp)
-            ) {
+            Column {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
