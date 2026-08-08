@@ -293,38 +293,43 @@ fun MainScreen(
                                 shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
                             )
                     ) {
-                        HorizontalPager(
-                            state = pagerState,
-                            modifier = Modifier.fillMaxSize(),
-                            userScrollEnabled = true,
-                            beyondViewportPageCount = 1,
-                            key = { page -> groups.getOrNull(page)?.id ?: "group-page-$page" }
-                        ) { page ->
-                            val group = groups.getOrNull(page) ?: return@HorizontalPager
+                        Column(modifier = Modifier.fillMaxSize()) {
+                            // ИНСТРУКЦИЯ ПО ПОДКЛЮЧЕНИЮ
+                            VRInstructionBanner()
 
-                            GroupPagerPage(
-                                groupId = group.id,
-                                mainViewModel = mainViewModel,
-                                selectedGuid = selectedGuid,
-                                doubleColumnDisplay = doubleColumnDisplay,
-                                confirmRemove = confirmRemove,
-                                searchQuery = searchQuery,
-                                lazyListStates = lazyListStates,
-                                lazyGridStates = lazyGridStates,
-                                onSelectServer = { guid -> onAction(MainAction.SelectServer(guid)) },
-                                onEditServer = { guid, profile -> onAction(MainAction.EditServer(guid, profile)) },
-                                onShareServer = { guid, profile ->
-                                    shareTarget = Triple(guid, profile, false)
-                                },
-                                onMoreServer = { guid, profile ->
-                                    shareTarget = Triple(guid, profile, true)
-                                },
-                                onRemoveServer = { guid ->
-                                    if (confirmRemove) showRemoveConfirm = guid
-                                    else onAction(MainAction.RemoveServer(guid))
-                                },
-                                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp)
-                            )
+                            HorizontalPager(
+                                state = pagerState,
+                                modifier = Modifier.fillMaxSize(),
+                                userScrollEnabled = true,
+                                beyondViewportPageCount = 1,
+                                key = { page -> groups.getOrNull(page)?.id ?: "group-page-$page" }
+                            ) { page ->
+                                val group = groups.getOrNull(page) ?: return@HorizontalPager
+
+                                GroupPagerPage(
+                                    groupId = group.id,
+                                    mainViewModel = mainViewModel,
+                                    selectedGuid = selectedGuid,
+                                    doubleColumnDisplay = doubleColumnDisplay,
+                                    confirmRemove = confirmRemove,
+                                    searchQuery = searchQuery,
+                                    lazyListStates = lazyListStates,
+                                    lazyGridStates = lazyGridStates,
+                                    onSelectServer = { guid -> onAction(MainAction.SelectServer(guid)) },
+                                    onEditServer = { guid, profile -> onAction(MainAction.EditServer(guid, profile)) },
+                                    onShareServer = { guid, profile ->
+                                        shareTarget = Triple(guid, profile, false)
+                                    },
+                                    onMoreServer = { guid, profile ->
+                                        shareTarget = Triple(guid, profile, true)
+                                    },
+                                    onRemoveServer = { guid ->
+                                        if (confirmRemove) showRemoveConfirm = guid
+                                        else onAction(MainAction.RemoveServer(guid))
+                                    },
+                                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp)
+                                )
+                            }
                         }
                     }
                 }
