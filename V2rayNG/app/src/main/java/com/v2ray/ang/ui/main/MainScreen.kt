@@ -33,7 +33,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.v2ray.ang.compose.LocalDarkTheme
 import com.v2ray.ang.compose.QRCodeDialog
 import com.v2ray.ang.dto.entities.ProfileItem
 import kotlinx.coroutines.delay
@@ -67,9 +66,7 @@ fun MainScreen(
     var showDelInvalidConfirm by remember { mutableStateOf(false) }
     var showRemoveConfirm by remember { mutableStateOf<String?>(null) }
 
-    // Состояние видимости баннера инструкции
     var showInstructionBanner by remember { mutableStateOf(true) }
-
     var shareTarget by remember { mutableStateOf<Triple<String, ProfileItem, Boolean>?>(null) }
 
     val pagerState = rememberPagerState(
@@ -286,27 +283,25 @@ fun MainScreen(
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
                             verticalAlignment = Alignment.CenterHorizontally
                         ) {
-                            // Кнопка переключения инструкции
                             ActionButton(
                                 text = if (showInstructionBanner) "📖 Скрыть гид" else "📖 Инструкция",
                                 accentColor = Color(0xFF00FF88),
                                 onClick = { showInstructionBanner = !showInstructionBanner }
                             )
 
-                            // Кнопка сканирования QR-кода
                             ActionButton(
                                 text = "📷 Сканировать QR",
                                 accentColor = Color(0xFF9D00FF),
-                                onClick = { onNavigate("scanner") }
+                                onClick = { onAction(MainAction.ScanQR) }
                             )
                         }
                     }
 
-                    // --- СПИСОК СЕРВЕРОВ С МАТОВОЙ ПОДЛОЖКОЙ ---
+                    // --- СПИСОК СЕРВЕРОВ ---
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .heightIn(min = 350.dp, max = 600.dp)
+                            .height(450.dp)
                             .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
                             .background(Color(0xFF0F1015))
                             .border(
