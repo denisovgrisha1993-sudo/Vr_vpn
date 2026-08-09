@@ -66,7 +66,6 @@ fun MainScreen(
     var showDelInvalidConfirm by remember { mutableStateOf(false) }
     var showRemoveConfirm by remember { mutableStateOf<String?>(null) }
 
-    // Состояние показа инструкции
     var showInstructionBanner by remember { mutableStateOf(false) }
     var shareTarget by remember { mutableStateOf<Triple<String, ProfileItem, Boolean>?>(null) }
 
@@ -226,7 +225,6 @@ fun MainScreen(
             }
         ) { innerPadding ->
             if (groups.isNotEmpty()) {
-                // Основной скролл экрана
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
@@ -247,7 +245,7 @@ fun MainScreen(
                         )
                     }
 
-                    // --- РЕАКТОР И КНОПКИ ---
+                    // --- РЕАКТОР И СТАТУС ---
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -283,25 +281,23 @@ fun MainScreen(
                         // Панель быстрых кнопок
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(10.dp),
-                            verticalAlignment = Alignment.CenterHorizontally
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            // Кнопка показа/скрытия инструкции
                             CustomActionButton(
                                 text = if (showInstructionBanner) "📖 Скрыть гид" else "📖 Инструкция",
                                 accentColor = Color(0xFF00FF88),
                                 onClick = { showInstructionBanner = !showInstructionBanner }
                             )
 
-                            // Кнопка вызова сканера QR
                             CustomActionButton(
                                 text = "📷 Сканировать QR",
                                 accentColor = Color(0xFF9D00FF),
-                                onClick = { onNavigate("scanner") }
+                                onClick = { onAction(MainAction.ScanQR) }
                             )
                         }
                     }
 
-                    // --- БАННЕР ИНСТРУКЦИИ (ЕСЛИ ВКЛЮЧЕН) ---
+                    // --- БАННЕР ИНСТРУКЦИИ ---
                     AnimatedVisibility(visible = showInstructionBanner) {
                         Box(
                             modifier = Modifier
