@@ -169,7 +169,7 @@ class MainViewModel(
             MainAction.RemoveDuplicateServers -> removeDuplicateServerAsync()
             MainAction.RemoveInvalidServers -> removeInvalidServerAsync()
             MainAction.SortByTestResults -> sortByTestResultsAsync()
-            MainAction.UpdateSubscriptions -> importConfigViaSub()
+            MainAction.UpdateSubscriptions -> importConfigViaSub(silent = false)
             MainAction.ExportAll -> exportAllAsync()
             is MainAction.SelectGroup -> subscriptionIdChanged(action.groupId)
             is MainAction.SelectServer -> updateSelectedGuid(action.guid)
@@ -203,7 +203,7 @@ class MainViewModel(
         }
     }
 
-    // ---------- Initialization ----------
+    // ---------- Initialization (С Авто-подключением и фоновым обновлением) ----------
     fun initialize() {
         viewModelScope.launch(preloadDispatcher) {
             try {
@@ -211,6 +211,16 @@ class MainViewModel(
                 delay(32L)
                 dataSource.initAssets()
                 dataSource.syncSubscriptions()
+
+                // 1. Авто-обновление подписки в фоне
+                importConfigViaSub(silent = true)
+
+                // 2. Авто-подключение при старте приложения (если есть активный сервер и VPN еще выключен)
+                val currentGuid = dataSource.getSelectServer()
+                if (!currentGuid.isNullOrEmpty() && !_uiState.value.isRunning) {
+                    onAction(MainAction.ToggleService)
+                }
+
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (error: Exception) {
@@ -341,6 +351,11 @@ class MainViewModel(
                 val selectedServers = loadGroup(selectedGroup, forceRefresh)
                 updateGroupUi(selectedGroup, selectedServers)
 
+                // 3. Авто-выбор первого сервера при наличии серверов
+                if (dataSource.getSelectServer().isNullOrEmpty() && selectedServers.isNotEmpty()) {
+                    updateSelectedGuid(selectedServers.first().guid)
+                }
+
                 if (!initialPageReady.isCompleted) {
                     initialPageReady.complete(Unit)
                 }
@@ -377,12 +392,18 @@ class MainViewModel(
                         configText, uiState.value.selectedGroupId, true
                     )
                     when {
-                        count > 0 -> {
-                            toast(dataSource.getString(R.string.title_import_config_count, count))
-                            setupGroupTab(forceRefresh = true)
-                        }
+                        count > 0 || countSub > 0 -> {
+                            if (count > 0) {
+                                toast(dataSource.getString(R.string.title_import_config_count, count))
+                            }
+                            setupGroupTab(forceRefresh = true).join()
 
-                        countSub > 0 -> setupGroupTab(forceRefresh = true)
+                            // Автоматически выбираем импортированный сервер
+                            val servers = currentServers()
+                            if (servers.isNotEmpty()) {
+                                updateSelectedGuid(servers.first().guid)
+                            }
+                        }
                         else -> toastError(R.string.toast_failure)
                     }
                 } catch (cancelled: CancellationException) {
@@ -395,17 +416,18 @@ class MainViewModel(
         }
     }
 
-    private fun importConfigViaSub() {
+    private fun importConfigViaSub(silent: Boolean = false) {
         val subId = uiState.value.selectedGroupId
-        launchLoading {
-            withContext(ioDispatcher) {
-                try {
-                    val result = if (subId.isEmpty()) {
-                        dataSource.updateConfigViaSubAll()
-                    } else {
-                        val item = dataSource.getSubscriptionItem(subId) ?: return@withContext
-                        dataSource.updateConfigViaSub(SubscriptionCache(subId, item))
-                    }
+        viewModelScope.launch(ioDispatcher) {
+            try {
+                val result = if (subId.isEmpty()) {
+                    dataSource.updateConfigViaSubAll()
+                } else {
+                    val item = dataSource.getSubscriptionItem(subId) ?: return@launch
+                    dataSource.updateConfigViaSub(SubscriptionCache(subId, item))
+                }
+
+                if (!silent) {
                     when {
                         result.successCount + result.failureCount + result.skipCount == 0 ->
                             toast(R.string.title_update_subscription_no_subscription)
@@ -416,16 +438,23 @@ class MainViewModel(
                         else ->
                             toast(dataSource.getString(R.string.title_update_subscription_result, result.configCount, result.successCount, result.failureCount, result.skipCount))
                     }
-                    if (result.configCount > 0) {
-                        setupGroupTab(forceRefresh = true)
-                        refreshSelectedGuid()
-                    }
-                } catch (cancelled: CancellationException) {
-                    throw cancelled
-                } catch (e: Exception) {
-                    LogUtil.e(AppConfig.TAG, "Subscription update failed", e)
-                    toastError(R.string.toast_failure)
                 }
+
+                if (result.configCount > 0) {
+                    setupGroupTab(forceRefresh = true).join()
+                    refreshSelectedGuid()
+
+                    // Выбираем первый сервер, если никакой не выбран
+                    val servers = currentServers()
+                    if (dataSource.getSelectServer().isNullOrEmpty() && servers.isNotEmpty()) {
+                        updateSelectedGuid(servers.first().guid)
+                    }
+                }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (e: Exception) {
+                LogUtil.e(AppConfig.TAG, "Subscription update failed", e)
+                if (!silent) toastError(R.string.toast_failure)
             }
         }
     }
