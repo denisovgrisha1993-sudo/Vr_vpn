@@ -7,6 +7,8 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.FlingBehavior
+import androidx.compose.foundation.gestures.ScrollableDefaults
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyListState
@@ -78,6 +80,10 @@ fun MainScreen(
     val lazyGridStates = remember { mutableStateMapOf<String, LazyGridState>() }
 
     var locateInProgress by remember { mutableStateOf(false) }
+
+    // Настройка плавного скролла с инерцией
+    val scrollState = rememberScrollState()
+    val smoothFlingBehavior = ScrollableDefaults.flingBehavior()
 
     LaunchedEffect(groups) {
         val validGroupIds = groups.map { it.id }.toSet()
@@ -230,7 +236,10 @@ fun MainScreen(
                         .fillMaxSize()
                         .padding(innerPadding)
                         .background(Color(0xFF07080A))
-                        .verticalScroll(rememberScrollState())
+                        .verticalScroll(
+                            state = scrollState,
+                            flingBehavior = smoothFlingBehavior
+                        )
                 ) {
                     if (groups.size > 1) {
                         GroupTabBar(
@@ -239,7 +248,7 @@ fun MainScreen(
                             mainViewModel = mainViewModel,
                             onTabClick = { targetIndex ->
                                 scope.launch {
-                                    pagerState.scrollToPage(targetIndex)
+                                    pagerState.animateScrollToPage(targetIndex)
                                 }
                             }
                         )
@@ -289,7 +298,6 @@ fun MainScreen(
                                 onClick = { showInstructionBanner = !showInstructionBanner }
                             )
 
-                            // Прямая привязка к родному экшену сканирования
                             CustomActionButton(
                                 text = "📷 Сканировать QR",
                                 accentColor = Color(0xFF9D00FF),
@@ -359,7 +367,7 @@ fun MainScreen(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(480.dp)
+                            .height(520.dp)
                             .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
                             .background(Color(0xFF0F1015))
                             .border(
