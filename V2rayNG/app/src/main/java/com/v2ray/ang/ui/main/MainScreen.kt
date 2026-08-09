@@ -123,10 +123,7 @@ fun MainScreen(
         locateInProgress = true
         try {
             if (pagerState.settledPage != target.groupIndex) {
-                pagerState.navigateToPageOptimized(
-                    targetPage = target.groupIndex,
-                    animateAdjacentPage = false
-                )
+                pagerState.scrollToPage(target.groupIndex)
             }
             onAction(MainAction.SelectGroup(target.groupId))
 
@@ -245,10 +242,7 @@ fun MainScreen(
                             mainViewModel = mainViewModel,
                             onTabClick = { targetIndex ->
                                 scope.launch {
-                                    pagerState.navigateToPageOptimized(
-                                        targetPage = targetIndex,
-                                        animateAdjacentPage = true
-                                    )
+                                    pagerState.animateScrollToPage(targetIndex)
                                 }
                             }
                         )
@@ -303,7 +297,7 @@ fun MainScreen(
                             ActionButton(
                                 text = "📷 Сканировать QR",
                                 accentColor = Color(0xFF9D00FF),
-                                onClick = { onAction(MainAction.ScanCode) }
+                                onClick = { onNavigate("scanner") }
                             )
                         }
                     }
@@ -459,7 +453,7 @@ private fun InlineVRInstructionBanner(
                 )
                 InlineInstructionStep(
                     number = "4", 
-                    text = "Выберите появился сервер и нажмите фиолетовую кнопку!"
+                    text = "Выберите появившийся сервер и нажмите фиолетовую кнопку!"
                 )
             }
         }
