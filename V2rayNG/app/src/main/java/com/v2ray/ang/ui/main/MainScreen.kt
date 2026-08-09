@@ -33,6 +33,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.v2ray.ang.AppConfig
 import com.v2ray.ang.compose.QRCodeDialog
 import com.v2ray.ang.dto.entities.ProfileItem
 import kotlinx.coroutines.delay
@@ -292,7 +293,7 @@ fun MainScreen(
                             CustomActionButton(
                                 text = "📷 Сканировать QR",
                                 accentColor = Color(0xFF9D00FF),
-                                onClick = { onAction(MainAction.ImportQrCode) }
+                                onClick = { onNavigate(AppConfig.ANG_PACKAGE) }
                             )
                         }
                     }
