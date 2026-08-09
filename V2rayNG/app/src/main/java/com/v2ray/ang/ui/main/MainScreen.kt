@@ -66,7 +66,8 @@ fun MainScreen(
     var showDelInvalidConfirm by remember { mutableStateOf(false) }
     var showRemoveConfirm by remember { mutableStateOf<String?>(null) }
 
-    var showInstructionBanner by remember { mutableStateOf(true) }
+    // Состояние показа инструкции
+    var showInstructionBanner by remember { mutableStateOf(false) }
     var shareTarget by remember { mutableStateOf<Triple<String, ProfileItem, Boolean>?>(null) }
 
     val pagerState = rememberPagerState(
@@ -225,6 +226,7 @@ fun MainScreen(
             }
         ) { innerPadding ->
             if (groups.isNotEmpty()) {
+                // Основной скролл экрана
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
@@ -239,17 +241,17 @@ fun MainScreen(
                             mainViewModel = mainViewModel,
                             onTabClick = { targetIndex ->
                                 scope.launch {
-                                    pagerState.animateScrollToPage(targetIndex)
+                                    pagerState.scrollToPage(targetIndex)
                                 }
                             }
                         )
                     }
 
-                    // --- РЕАКТОР И СТАТУС ---
+                    // --- РЕАКТОР И КНОПКИ ---
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 20.dp),
+                            .padding(vertical = 16.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center
                     ) {
@@ -276,24 +278,83 @@ fun MainScreen(
                             letterSpacing = 1.5.sp
                         )
 
-                        Spacer(modifier = Modifier.height(18.dp))
+                        Spacer(modifier = Modifier.height(16.dp))
 
-                        // --- БЫСТРЫЕ КНОПКИ ДЕЙСТВИЙ ---
+                        // Панель быстрых кнопок
                         Row(
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
                             verticalAlignment = Alignment.CenterHorizontally
                         ) {
-                            ActionButton(
+                            // Кнопка показа/скрытия инструкции
+                            CustomActionButton(
                                 text = if (showInstructionBanner) "📖 Скрыть гид" else "📖 Инструкция",
                                 accentColor = Color(0xFF00FF88),
                                 onClick = { showInstructionBanner = !showInstructionBanner }
                             )
 
-                            ActionButton(
+                            // Кнопка вызова сканера QR
+                            CustomActionButton(
                                 text = "📷 Сканировать QR",
                                 accentColor = Color(0xFF9D00FF),
-                                onClick = { onAction(MainAction.ScanQR) }
+                                onClick = { onNavigate("scanner") }
                             )
+                        }
+                    }
+
+                    // --- БАННЕР ИНСТРУКЦИИ (ЕСЛИ ВКЛЮЧЕН) ---
+                    AnimatedVisibility(visible = showInstructionBanner) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 6.dp)
+                                .background(Color(0xCC121212), RoundedCornerShape(16.dp))
+                                .border(1.dp, Color(0x33FFFFFF), RoundedCornerShape(16.dp))
+                                .padding(14.dp)
+                        ) {
+                            Column {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "🚀 Быстрый старт OneTap VR",
+                                        color = Color(0xFF00FF88),
+                                        fontSize = 15.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Box(
+                                        modifier = Modifier
+                                            .size(24.dp)
+                                            .clickable { showInstructionBanner = false },
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Canvas(modifier = Modifier.size(12.dp)) {
+                                            drawLine(
+                                                color = Color.Gray,
+                                                start = Offset(0f, 0f),
+                                                end = Offset(size.width, size.height),
+                                                strokeWidth = 3f,
+                                                cap = StrokeCap.Round
+                                            )
+                                            drawLine(
+                                                color = Color.Gray,
+                                                start = Offset(size.width, 0f),
+                                                end = Offset(0f, size.height),
+                                                strokeWidth = 3f,
+                                                cap = StrokeCap.Round
+                                            )
+                                        }
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                InlineInstructionStep("1", "Зайдите в Telegram-бот @one_tap_vpn_bot и получите QR-код.")
+                                InlineInstructionStep("2", "Нажмите «📷 Сканировать QR» прямо на этом экране.")
+                                InlineInstructionStep("3", "Наведите камеру очков на QR-код для импорта.")
+                                InlineInstructionStep("4", "Выберите сервер и нажмите круглую кнопку подключения!")
+                            }
                         }
                     }
 
@@ -301,7 +362,7 @@ fun MainScreen(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(450.dp)
+                            .height(480.dp)
                             .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
                             .background(Color(0xFF0F1015))
                             .border(
@@ -310,45 +371,38 @@ fun MainScreen(
                                 shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
                             )
                     ) {
-                        Column(modifier = Modifier.fillMaxSize()) {
-                            InlineVRInstructionBanner(
-                                isVisible = showInstructionBanner,
-                                onDismiss = { showInstructionBanner = false }
+                        HorizontalPager(
+                            state = pagerState,
+                            modifier = Modifier.fillMaxSize(),
+                            userScrollEnabled = true,
+                            beyondViewportPageCount = 1,
+                            key = { page -> groups.getOrNull(page)?.id ?: "group-page-$page" }
+                        ) { page ->
+                            val group = groups.getOrNull(page) ?: return@HorizontalPager
+
+                            GroupPagerPage(
+                                groupId = group.id,
+                                mainViewModel = mainViewModel,
+                                selectedGuid = selectedGuid,
+                                doubleColumnDisplay = doubleColumnDisplay,
+                                confirmRemove = confirmRemove,
+                                searchQuery = searchQuery,
+                                lazyListStates = lazyListStates,
+                                lazyGridStates = lazyGridStates,
+                                onSelectServer = { guid -> onAction(MainAction.SelectServer(guid)) },
+                                onEditServer = { guid, profile -> onAction(MainAction.EditServer(guid, profile)) },
+                                onShareServer = { guid, profile ->
+                                    shareTarget = Triple(guid, profile, false)
+                                },
+                                onMoreServer = { guid, profile ->
+                                    shareTarget = Triple(guid, profile, true)
+                                },
+                                onRemoveServer = { guid ->
+                                    if (confirmRemove) showRemoveConfirm = guid
+                                    else onAction(MainAction.RemoveServer(guid))
+                                },
+                                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp)
                             )
-
-                            HorizontalPager(
-                                state = pagerState,
-                                modifier = Modifier.fillMaxSize(),
-                                userScrollEnabled = true,
-                                beyondViewportPageCount = 1,
-                                key = { page -> groups.getOrNull(page)?.id ?: "group-page-$page" }
-                            ) { page ->
-                                val group = groups.getOrNull(page) ?: return@HorizontalPager
-
-                                GroupPagerPage(
-                                    groupId = group.id,
-                                    mainViewModel = mainViewModel,
-                                    selectedGuid = selectedGuid,
-                                    doubleColumnDisplay = doubleColumnDisplay,
-                                    confirmRemove = confirmRemove,
-                                    searchQuery = searchQuery,
-                                    lazyListStates = lazyListStates,
-                                    lazyGridStates = lazyGridStates,
-                                    onSelectServer = { guid -> onAction(MainAction.SelectServer(guid)) },
-                                    onEditServer = { guid, profile -> onAction(MainAction.EditServer(guid, profile)) },
-                                    onShareServer = { guid, profile ->
-                                        shareTarget = Triple(guid, profile, false)
-                                    },
-                                    onMoreServer = { guid, profile ->
-                                        shareTarget = Triple(guid, profile, true)
-                                    },
-                                    onRemoveServer = { guid ->
-                                        if (confirmRemove) showRemoveConfirm = guid
-                                        else onAction(MainAction.RemoveServer(guid))
-                                    },
-                                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp)
-                                )
-                            }
                         }
                     }
                 }
@@ -358,7 +412,7 @@ fun MainScreen(
 }
 
 @Composable
-private fun ActionButton(
+private fun CustomActionButton(
     text: String,
     accentColor: Color,
     onClick: () -> Unit
@@ -367,7 +421,7 @@ private fun ActionButton(
         modifier = Modifier
             .clip(RoundedCornerShape(12.dp))
             .background(Color(0xFF12141D))
-            .border(1.dp, accentColor.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
+            .border(1.dp, accentColor.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
             .clickable(onClick = onClick)
             .padding(horizontal = 14.dp, vertical = 8.dp),
         contentAlignment = Alignment.Center
@@ -376,82 +430,8 @@ private fun ActionButton(
             text = text,
             color = Color.White,
             fontSize = 12.sp,
-            fontWeight = FontWeight.SemiBold
+            fontWeight = FontWeight.Bold
         )
-    }
-}
-
-@Composable
-private fun InlineVRInstructionBanner(
-    isVisible: Boolean,
-    onDismiss: () -> Unit
-) {
-    AnimatedVisibility(visible = isVisible) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp)
-                .background(Color(0xCC121212), RoundedCornerShape(16.dp))
-                .border(1.dp, Color(0x33FFFFFF), RoundedCornerShape(16.dp))
-                .padding(16.dp)
-        ) {
-            Column {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "🚀 Быстрый старт OneTap VR",
-                        color = Color(0xFF00FF88),
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Box(
-                        modifier = Modifier
-                            .size(24.dp)
-                            .clickable { onDismiss() },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Canvas(modifier = Modifier.size(14.dp)) {
-                            drawLine(
-                                color = Color.Gray,
-                                start = Offset(0f, 0f),
-                                end = Offset(size.width, size.height),
-                                strokeWidth = 3f,
-                                cap = StrokeCap.Round
-                            )
-                            drawLine(
-                                color = Color.Gray,
-                                start = Offset(size.width, 0f),
-                                end = Offset(0f, size.height),
-                                strokeWidth = 3f,
-                                cap = StrokeCap.Round
-                            )
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                InlineInstructionStep(
-                    number = "1", 
-                    text = "Зайдите в Telegram-бот @one_tap_vpn_bot и получите QR-код подписки."
-                )
-                InlineInstructionStep(
-                    number = "2", 
-                    text = "Нажмите «📷 Сканировать QR» прямо на этом экране или «+» в углу."
-                )
-                InlineInstructionStep(
-                    number = "3", 
-                    text = "Наведите камеру очков на QR-код для моментального импорта."
-                )
-                InlineInstructionStep(
-                    number = "4", 
-                    text = "Выберите появившийся сервер и нажмите фиолетовую кнопку!"
-                )
-            }
-        }
     }
 }
 
@@ -460,29 +440,29 @@ private fun InlineInstructionStep(number: String, text: String) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp),
+            .padding(vertical = 3.dp),
         verticalAlignment = Alignment.Top
     ) {
         Box(
             modifier = Modifier
                 .padding(top = 2.dp)
-                .size(20.dp)
-                .background(Color(0xFF8A2BE2), RoundedCornerShape(10.dp)),
+                .size(18.dp)
+                .background(Color(0xFF8A2BE2), RoundedCornerShape(9.dp)),
             contentAlignment = Alignment.Center
         ) {
             Text(
                 text = number,
                 color = Color.White,
-                fontSize = 11.sp,
+                fontSize = 10.sp,
                 fontWeight = FontWeight.Bold
             )
         }
-        Spacer(modifier = Modifier.width(10.dp))
+        Spacer(modifier = Modifier.width(8.dp))
         Text(
             text = text,
             color = Color.White,
-            fontSize = 13.sp,
-            lineHeight = 17.sp
+            fontSize = 12.sp,
+            lineHeight = 16.sp
         )
     }
 }
@@ -527,12 +507,12 @@ fun CyberPowerButton(
     val scaleModifier = if (isRunning) Modifier.scale(pulseScale) else Modifier
 
     Box(
-        modifier = Modifier.size(250.dp),
+        modifier = Modifier.size(230.dp),
         contentAlignment = Alignment.Center
     ) {
         Box(
             modifier = Modifier
-                .size(250.dp)
+                .size(230.dp)
                 .then(scaleModifier)
                 .clip(CircleShape)
                 .background(
@@ -548,10 +528,10 @@ fun CyberPowerButton(
 
         Canvas(
             modifier = Modifier
-                .size(210.dp)
+                .size(190.dp)
                 .rotate(if (isRunning) rotation else 0f)
         ) {
-            val strokeWidth = 14f
+            val strokeWidth = 12f
 
             drawArc(
                 brush = Brush.sweepGradient(
@@ -575,7 +555,7 @@ fun CyberPowerButton(
 
         Box(
             modifier = Modifier
-                .size(135.dp)
+                .size(125.dp)
                 .clip(CircleShape)
                 .background(
                     Brush.verticalGradient(
@@ -605,19 +585,19 @@ fun CyberPowerButton(
                 label = "iconColor"
             )
 
-            Canvas(modifier = Modifier.size(50.dp)) {
+            Canvas(modifier = Modifier.size(45.dp)) {
                 drawArc(
                     color = iconColor,
                     startAngle = -60f,
                     sweepAngle = 300f,
                     useCenter = false,
-                    style = Stroke(width = 9f, cap = StrokeCap.Round)
+                    style = Stroke(width = 8f, cap = StrokeCap.Round)
                 )
                 drawLine(
                     color = iconColor,
                     start = Offset(size.width / 2, 0f),
                     end = Offset(size.width / 2, size.height / 2.3f),
-                    strokeWidth = 9f,
+                    strokeWidth = 8f,
                     cap = StrokeCap.Round
                 )
             }
