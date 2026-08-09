@@ -23,22 +23,22 @@ class QSTileService : TileService() {
      * @param state The state to set.
      */
     fun setState(state: Int) {
-        qsTile?.icon = Icon.createWithResource(applicationContext, R.drawable.ic_stat_name)
+        val tile = qsTile ?: return
+        
+        tile.icon = Icon.createWithResource(applicationContext, R.drawable.ic_stat_name)
+        
         if (state == Tile.STATE_INACTIVE) {
-            qsTile?.state = Tile.STATE_INACTIVE
-            qsTile?.label = getString(R.string.app_name)
+            tile.state = Tile.STATE_INACTIVE
+            tile.label = "OneTap: OFF"
         } else if (state == Tile.STATE_ACTIVE) {
-            qsTile?.state = Tile.STATE_ACTIVE
-            qsTile?.label = CoreServiceManager.getRunningServerName()
+            tile.state = Tile.STATE_ACTIVE
+            val serverName = CoreServiceManager.getRunningServerName()
+            tile.label = if (serverName.isNotBlank()) "OneTap: $serverName" else "OneTap: ON"
         }
 
-        qsTile?.updateTile()
+        tile.updateTile()
     }
 
-    /**
-     * Refer to the official documentation for [registerReceiver](https://developer.android.com/reference/androidx/core/content/ContextCompat#registerReceiver(android.content.Context,android.content.BroadcastReceiver,android.content.IntentFilter,int):
-     * `registerReceiver(Context, BroadcastReceiver, IntentFilter, int)`.
-     */
     override fun onStartListening() {
         super.onStartListening()
 
@@ -53,27 +53,20 @@ class QSTileService : TileService() {
         MessageUtil.sendMsg2Service(this, AppConfig.MSG_REGISTER_CLIENT, "")
     }
 
-    /**
-     * Called when the tile stops listening.
-     */
     override fun onStopListening() {
         super.onStopListening()
 
         try {
-            applicationContext.unregisterReceiver(mMsgReceive)
+            mMsgReceive?.let { applicationContext.unregisterReceiver(it) }
             mMsgReceive = null
         } catch (e: Exception) {
             LogUtil.e(AppConfig.TAG, "Failed to unregister receiver", e)
         }
-
     }
 
-    /**
-     * Called when the tile is clicked.
-     */
     override fun onClick() {
         super.onClick()
-        when (qsTile.state) {
+        when (qsTile?.state) {
             Tile.STATE_INACTIVE -> {
                 CoreServiceManager.startVServiceFromToggle(this)
             }
