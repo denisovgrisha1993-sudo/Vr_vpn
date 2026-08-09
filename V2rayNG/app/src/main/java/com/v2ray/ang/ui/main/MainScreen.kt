@@ -33,7 +33,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.v2ray.ang.AppConfig
 import com.v2ray.ang.compose.QRCodeDialog
 import com.v2ray.ang.dto.entities.ProfileItem
 import kotlinx.coroutines.delay
@@ -293,7 +292,7 @@ fun MainScreen(
                             CustomActionButton(
                                 text = "📷 Сканировать QR",
                                 accentColor = Color(0xFF9D00FF),
-                                onClick = { onNavigate(AppConfig.ANG_PACKAGE) }
+                                onClick = { onAction(MainAction.ImportQrCode) }
                             )
                         }
                     }
@@ -350,7 +349,7 @@ fun MainScreen(
                                 InlineInstructionStep("1", "Зайдите в Telegram-бот @one_tap_vpn_bot и получите QR-код.")
                                 InlineInstructionStep("2", "Нажмите «📷 Сканировать QR» прямо на этом экране.")
                                 InlineInstructionStep("3", "Наведите камеру очков на QR-код для импорта.")
-                                InlineInstructionStep("4", "Выберите сервер и нажмите круглую кнопку подключения!")
+                                InlineInstructionStep("4", "Выберите появившийся сервер и нажмите кнопку подключения!")
                             }
                         }
                     }
