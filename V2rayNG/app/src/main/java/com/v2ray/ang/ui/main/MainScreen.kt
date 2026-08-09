@@ -13,8 +13,10 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -64,6 +66,9 @@ fun MainScreen(
     var showDelDuplicateConfirm by remember { mutableStateOf(false) }
     var showDelInvalidConfirm by remember { mutableStateOf(false) }
     var showRemoveConfirm by remember { mutableStateOf<String?>(null) }
+
+    // Состояние видимости баннера инструкции
+    var showInstructionBanner by remember { mutableStateOf(true) }
 
     var shareTarget by remember { mutableStateOf<Triple<String, ProfileItem, Boolean>?>(null) }
 
@@ -231,6 +236,7 @@ fun MainScreen(
                         .fillMaxSize()
                         .padding(innerPadding)
                         .background(Color(0xFF07080A))
+                        .verticalScroll(rememberScrollState())
                 ) {
                     if (groups.size > 1) {
                         GroupTabBar(
@@ -252,7 +258,7 @@ fun MainScreen(
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .weight(0.52f),
+                            .padding(vertical = 20.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center
                     ) {
@@ -261,7 +267,7 @@ fun MainScreen(
                             onClick = { onAction(MainAction.ToggleService) }
                         )
 
-                        Spacer(modifier = Modifier.height(20.dp))
+                        Spacer(modifier = Modifier.height(16.dp))
 
                         Text(
                             text = if (isRunning) "S Y S T E M   O N L I N E" else "S Y S T E M   O F F L I N E",
@@ -278,13 +284,35 @@ fun MainScreen(
                             fontWeight = FontWeight.Bold,
                             letterSpacing = 1.5.sp
                         )
+
+                        Spacer(modifier = Modifier.height(18.dp))
+
+                        // --- БЫСТРЫЕ КНОПКИ ДЕЙСТВИЙ ---
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            // Кнопка переключения инструкции
+                            ActionButton(
+                                text = if (showInstructionBanner) "📖 Скрыть гид" else "📖 Инструкция",
+                                accentColor = Color(0xFF00FF88),
+                                onClick = { showInstructionBanner = !showInstructionBanner }
+                            )
+
+                            // Кнопка сканирования QR-кода
+                            ActionButton(
+                                text = "📷 Сканировать QR",
+                                accentColor = Color(0xFF9D00FF),
+                                onClick = { onAction(MainAction.ScanQR) }
+                            )
+                        }
                     }
 
                     // --- СПИСОК СЕРВЕРОВ С МАТОВОЙ ПОДЛОЖКОЙ ---
                     Box(
                         modifier = Modifier
-                            .weight(0.48f)
                             .fillMaxWidth()
+                            .heightIn(min = 350.dp, max = 600.dp)
                             .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
                             .background(Color(0xFF0F1015))
                             .border(
@@ -294,7 +322,10 @@ fun MainScreen(
                             )
                     ) {
                         Column(modifier = Modifier.fillMaxSize()) {
-                            InlineVRInstructionBanner()
+                            InlineVRInstructionBanner(
+                                isVisible = showInstructionBanner,
+                                onDismiss = { showInstructionBanner = false }
+                            )
 
                             HorizontalPager(
                                 state = pagerState,
@@ -338,9 +369,34 @@ fun MainScreen(
 }
 
 @Composable
-private fun InlineVRInstructionBanner() {
-    var isVisible by remember { mutableStateOf(true) }
+private fun ActionButton(
+    text: String,
+    accentColor: Color,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(12.dp))
+            .background(Color(0xFF12141D))
+            .border(1.dp, accentColor.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 8.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = text,
+            color = Color.White,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.SemiBold
+        )
+    }
+}
 
+@Composable
+private fun InlineVRInstructionBanner(
+    isVisible: Boolean,
+    onDismiss: () -> Unit
+) {
     AnimatedVisibility(visible = isVisible) {
         Box(
             modifier = Modifier
@@ -360,12 +416,12 @@ private fun InlineVRInstructionBanner() {
                         text = "🚀 Быстрый старт OneTap VR",
                         color = Color(0xFF00FF88),
                         fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold
+                        FontWeight = FontWeight.Bold
                     )
                     Box(
                         modifier = Modifier
                             .size(24.dp)
-                            .clickable { isVisible = false },
+                            .clickable { onDismiss() },
                         contentAlignment = Alignment.Center
                     ) {
                         Canvas(modifier = Modifier.size(14.dp)) {
@@ -395,15 +451,15 @@ private fun InlineVRInstructionBanner() {
                 )
                 InlineInstructionStep(
                     number = "2", 
-                    text = "В этом приложении на шлеме нажмите «+» в верхнем углу экрана."
+                    text = "Нажмите «📷 Сканировать QR» прямо на этом экране или «+» в углу."
                 )
                 InlineInstructionStep(
                     number = "3", 
-                    text = "Выберите «Импорт из QR-кода» и наведите камеру очков на QR-код."
+                    text = "Наведите камеру очков на QR-код для моментального импорта."
                 )
                 InlineInstructionStep(
                     number = "4", 
-                    text = "Выберите появившийся сервер и нажмите фиолетовую кнопку подключения!"
+                    text = "Выберите появился сервер и нажмите фиолетовую кнопку!"
                 )
             }
         }
