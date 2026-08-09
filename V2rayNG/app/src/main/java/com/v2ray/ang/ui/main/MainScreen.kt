@@ -303,7 +303,7 @@ fun MainScreen(
                             ActionButton(
                                 text = "📷 Сканировать QR",
                                 accentColor = Color(0xFF9D00FF),
-                                onClick = { onAction(MainAction.ScanQR) }
+                                onClick = { onAction(MainAction.ScanCode) }
                             )
                         }
                     }
@@ -416,7 +416,7 @@ private fun InlineVRInstructionBanner(
                         text = "🚀 Быстрый старт OneTap VR",
                         color = Color(0xFF00FF88),
                         fontSize = 16.sp,
-                        FontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold
                     )
                     Box(
                         modifier = Modifier
