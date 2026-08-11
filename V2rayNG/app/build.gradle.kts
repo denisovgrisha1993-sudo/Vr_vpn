@@ -6,10 +6,12 @@ plugins {
 }
 
 android {
-    namespace = "com.onetap.vpn.vr"
+    // namespace должен совпадать с исходным пакетом кода v2rayNG!
+    namespace = "com.v2ray.ang"
     compileSdk = 37
 
     defaultConfig {
+        // applicationId определяет имя пакета для SideQuest и Android!
         applicationId = "com.onetap.vpn.vr"
         minSdk = 24
         targetSdk = 37
@@ -53,7 +55,6 @@ android {
     productFlavors {
         create("fdroid") {
             dimension = "distribution"
-            applicationIdSuffix = ".fdroid"
             buildConfigField("String", "DISTRIBUTION", "\"F-Droid\"")
         }
         create("playstore") {
