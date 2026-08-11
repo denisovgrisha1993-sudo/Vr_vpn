@@ -6,12 +6,10 @@ plugins {
 }
 
 android {
-    // namespace должен совпадать с исходным пакетом кода v2rayNG!
     namespace = "com.v2ray.ang"
     compileSdk = 37
 
     defaultConfig {
-        // applicationId определяет имя пакета для SideQuest и Android!
         applicationId = "com.onetap.vpn.vr"
         minSdk = 24
         targetSdk = 37
@@ -40,10 +38,35 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    // 1. НАСТРОЙКА ПОДПИСИ (Берет данные из переменных окружения GitHub Actions или gradle.properties)
+    signingConfigs {
+        create("release") {
+            val keyAliasEnv = System.getenv("KEY_ALIAS") ?: properties["KEY_ALIAS"] as? String
+            val keyPasswordEnv = System.getenv("KEY_PASSWORD") ?: properties["KEY_PASSWORD"] as? String
+            val storeFileEnv = System.getenv("KEYSTORE_PATH") ?: properties["KEYSTORE_PATH"] as? String
+            val storePasswordEnv = System.getenv("STORE_PASSWORD") ?: properties["STORE_PASSWORD"] as? String
+
+            if (!storeFileEnv.isNullOfEmpty() && File(storeFileEnv).exists()) {
+                storeFile = File(storeFileEnv)
+                storePassword = storePasswordEnv
+                keyAlias = keyAliasEnv
+                keyPassword = keyPasswordEnv
+            }
+        }
+    }
+
     buildTypes {
         release {
+            isDebuggable = false // Явно отключаем debuggable
             isMinifyEnabled = true
             isShrinkResources = true
+            
+            // Подключаем подпись, если ключи заданы
+            val releaseSigning = signingConfigs.getByName("release")
+            if (releaseSigning.storeFile != null && releaseSigning.storeFile!!.exists()) {
+                signingConfig = releaseSigning
+            }
+
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -135,7 +158,6 @@ android {
             useLegacyPackaging = true
         }
     }
-
 }
 
 dependencies {
@@ -153,10 +175,12 @@ dependencies {
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.foundation)
     implementation(libs.androidx.compose.material3)
-    implementation(libs.androidx.compose.ui.tooling.preview)
-    implementation(libs.lifecycle.runtime.compose)
-
+    
+    // Переносим превью в debugImplementation, чтобы вычистить PreviewActivity из релиза!
+    debugImplementation(libs.androidx.compose.ui.tooling.preview)
     debugImplementation(libs.androidx.compose.ui.tooling)
+    
+    implementation(libs.lifecycle.runtime.compose)
 
     // Data and Storage Libraries
     implementation(libs.mmkv.static)
