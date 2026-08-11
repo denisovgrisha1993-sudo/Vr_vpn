@@ -62,14 +62,14 @@ jobs:
 
       - name: Decode Keystore
         run: |
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | tr -d '\r\n ' | base64 --decode > ${{ github.workspace }}/release.jks
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | tr -d '\r\n ' | base64 --decode > ${{ github.workspace }}/release.p12
 
       - name: Build Release APK
         env:
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
           STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
-          KEYSTORE_PATH: ${{ github.workspace }}/release.jks
+          KEYSTORE_PATH: ${{ github.workspace }}/release.p12
         run: |
           cd ${{ github.workspace }}/V2rayNG
           echo "sdk.dir=$ANDROID_HOME" > local.properties
