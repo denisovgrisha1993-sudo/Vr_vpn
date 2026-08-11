@@ -60,12 +60,10 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
-      # Распаковка созданного ключа из secrets
       - name: Decode Keystore
         run: |
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > ${{ github.workspace }}/release.jks
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | tr -d '\r\n ' | base64 --decode > ${{ github.workspace }}/release.jks
 
-      # Сборка Release APK с пробросом ключей подписи
       - name: Build Release APK
         env:
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
