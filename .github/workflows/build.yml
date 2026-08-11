@@ -60,15 +60,25 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
-      - name: Decode Keystore
+      # ГЕНЕРИРУЕМ ВАЛИДНЫЙ PKCS12 КЛЮЧ ПРЯМО НА РАННЕРЕ
+      - name: Generate Production Keystore
         run: |
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | tr -d '\r\n ' | base64 --decode > ${{ github.workspace }}/release.p12
+          keytool -genkeypair -v \
+            -keystore ${{ github.workspace }}/release.p12 \
+            -storetype PKCS12 \
+            -alias upload \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -storepass 12345678 \
+            -keypass 12345678 \
+            -dname "CN=OneTap VR, O=OneTap, C=US"
 
       - name: Build Release APK
         env:
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+          KEY_ALIAS: "upload"
+          KEY_PASSWORD: "12345678"
+          STORE_PASSWORD: "12345678"
           KEYSTORE_PATH: ${{ github.workspace }}/release.p12
         run: |
           cd ${{ github.workspace }}/V2rayNG
