@@ -54,6 +54,7 @@ android {
                     storePassword = storePasswordEnv
                     keyAlias = keyAliasEnv
                     keyPassword = keyPasswordEnv
+                    storeType = "PKCS12"
                 }
             }
         }
