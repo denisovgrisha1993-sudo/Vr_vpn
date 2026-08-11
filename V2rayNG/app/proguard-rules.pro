@@ -19,3 +19,13 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# --- V2Ray JNI & Core Rules ---
+-keep class com.v2ray.ang.** { *; }
+-keep class go.** { *; }
+-keep class libv2ray.** { *; }
+-keep class com.v2ray.ang.service.** { *; }
+
+-dontwarn com.v2ray.ang.**
+-dontwarn go.**
+-dontwarn libv2ray.**
