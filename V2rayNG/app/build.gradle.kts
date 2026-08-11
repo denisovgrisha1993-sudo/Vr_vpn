@@ -1,3 +1,5 @@
+import java.io.File
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -38,7 +40,6 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
-    // 1. НАСТРОЙКА ПОДПИСИ (Берет данные из переменных окружения GitHub Actions или gradle.properties)
     signingConfigs {
         create("release") {
             val keyAliasEnv = System.getenv("KEY_ALIAS") ?: properties["KEY_ALIAS"] as? String
@@ -46,23 +47,24 @@ android {
             val storeFileEnv = System.getenv("KEYSTORE_PATH") ?: properties["KEYSTORE_PATH"] as? String
             val storePasswordEnv = System.getenv("STORE_PASSWORD") ?: properties["STORE_PASSWORD"] as? String
 
-            // Исправлена опечатка isNullOfEmpty -> isNullOrEmpty
-            if (!storeFileEnv.isNullOrEmpty() && java.io.File(storeFileEnv).exists()) {
-                storeFile = java.io.File(storeFileEnv)
-                storePassword = storePasswordEnv
-                keyAlias = keyAliasEnv
-                keyPassword = keyPasswordEnv
+            if (!storeFileEnv.isNullOrEmpty()) {
+                val kFile = File(storeFileEnv)
+                if (kFile.exists()) {
+                    storeFile = kFile
+                    storePassword = storePasswordEnv
+                    keyAlias = keyAliasEnv
+                    keyPassword = keyPasswordEnv
+                }
             }
         }
     }
 
     buildTypes {
         release {
-            isDebuggable = false // Явно отключаем debuggable
+            isDebuggable = false
             isMinifyEnabled = true
             isShrinkResources = true
             
-            // Подключаем подпись, если файл ключа существует
             val releaseSigning = signingConfigs.getByName("release")
             if (releaseSigning.storeFile != null && releaseSigning.storeFile!!.exists()) {
                 signingConfig = releaseSigning
@@ -162,13 +164,9 @@ android {
 }
 
 dependencies {
-    // Core Libraries
     implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.aar", "*.jar"))))
-
-    // AndroidX Core Libraries
     implementation(libs.androidx.core.ktx)
 
-    // Compose Libraries
     implementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(platform(libs.androidx.compose.bom))
 
@@ -177,40 +175,32 @@ dependencies {
     implementation(libs.androidx.compose.foundation)
     implementation(libs.androidx.compose.material3)
     
-    // Перенесены в debugImplementation для вычищения PreviewActivity из релиза
     debugImplementation(libs.androidx.compose.ui.tooling.preview)
     debugImplementation(libs.androidx.compose.ui.tooling)
     
     implementation(libs.lifecycle.runtime.compose)
 
-    // Data and Storage Libraries
     implementation(libs.mmkv.static)
     implementation(libs.gson)
     implementation(libs.okhttp)
 
-    // Reactive and Utility Libraries
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.coroutines.core)
 
-    // QR Code: CameraX + ZXing
     implementation(libs.camerax.core)
     implementation(libs.camerax.camera2)
     implementation(libs.camerax.lifecycle)
     implementation(libs.camerax.compose)
-    implementation(libs.core) // zxing core
+    implementation(libs.core)
 
-    // AndroidX Lifecycle and Architecture Components
     implementation(libs.lifecycle.viewmodel.ktx)
     implementation(libs.lifecycle.runtime.ktx)
 
-    // Background Task Libraries
     implementation(libs.work.runtime.ktx)
     implementation(libs.work.multiprocess)
 
-    // Reorderable list
     implementation(libs.reorderable)
 
-    // Testing Libraries
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
