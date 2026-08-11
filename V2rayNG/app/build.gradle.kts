@@ -46,8 +46,9 @@ android {
             val storeFileEnv = System.getenv("KEYSTORE_PATH") ?: properties["KEYSTORE_PATH"] as? String
             val storePasswordEnv = System.getenv("STORE_PASSWORD") ?: properties["STORE_PASSWORD"] as? String
 
-            if (!storeFileEnv.isNullOfEmpty() && File(storeFileEnv).exists()) {
-                storeFile = File(storeFileEnv)
+            // Исправлена опечатка isNullOfEmpty -> isNullOrEmpty
+            if (!storeFileEnv.isNullOrEmpty() && java.io.File(storeFileEnv).exists()) {
+                storeFile = java.io.File(storeFileEnv)
                 storePassword = storePasswordEnv
                 keyAlias = keyAliasEnv
                 keyPassword = keyPasswordEnv
@@ -61,7 +62,7 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             
-            // Подключаем подпись, если ключи заданы
+            // Подключаем подпись, если файл ключа существует
             val releaseSigning = signingConfigs.getByName("release")
             if (releaseSigning.storeFile != null && releaseSigning.storeFile!!.exists()) {
                 signingConfig = releaseSigning
@@ -176,7 +177,7 @@ dependencies {
     implementation(libs.androidx.compose.foundation)
     implementation(libs.androidx.compose.material3)
     
-    // Переносим превью в debugImplementation, чтобы вычистить PreviewActivity из релиза!
+    // Перенесены в debugImplementation для вычищения PreviewActivity из релиза
     debugImplementation(libs.androidx.compose.ui.tooling.preview)
     debugImplementation(libs.androidx.compose.ui.tooling)
     
