@@ -1,10 +1,16 @@
 package com.v2ray.ang.ui.main
 
+import android.app.AlertDialog
 import android.content.Intent
 import android.net.VpnService
 import android.os.Build
 import android.os.Bundle
+import android.text.InputFilter
+import android.text.InputType
+import android.view.Gravity
 import android.view.KeyEvent
+import android.widget.EditText
+import android.widget.FrameLayout
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.runtime.Composable
@@ -50,6 +56,11 @@ import com.v2ray.ang.util.Utils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.json.JSONObject
+import java.io.BufferedReader
+import java.io.InputStreamReader
+import java.net.HttpURLConnection
+import java.net.URL
 
 class MainActivity : HelperBaseComponentActivity() {
 
@@ -200,7 +211,7 @@ class MainActivity : HelperBaseComponentActivity() {
 
     private fun startV2Ray() {
         if (mainViewModel.uiState.value.selectedGuid.isNullOrEmpty()) {
-            toast(R.string.title_file_chooser)
+            showPinInputDialog()
             return
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.CINNAMON_BUN &&
@@ -250,10 +261,18 @@ class MainActivity : HelperBaseComponentActivity() {
 
     private fun importClipboard() {
         try {
-            val text = Utils.getClipboard(this)
-            mainViewModel.onAction(MainAction.ImportBatchConfig(text))
+            val text = Utils.getClipboard(this).trim()
+            if (text.matches(Regex("^\\d{6}$"))) {
+                // Если в буфере обмена скопирован 6-значный PIN-код
+                fetchConfigByPin(text)
+            } else if (text.isNotEmpty()) {
+                mainViewModel.onAction(MainAction.ImportBatchConfig(text))
+            } else {
+                showPinInputDialog()
+            }
         } catch (e: Exception) {
             LogUtil.e(AppConfig.TAG, "Failed to import config from clipboard", e)
+            showPinInputDialog()
         }
     }
 
@@ -266,6 +285,79 @@ class MainActivity : HelperBaseComponentActivity() {
                 }
             } catch (e: Exception) {
                 LogUtil.e(AppConfig.TAG, "Failed to read content from URI", e)
+            }
+        }
+    }
+
+    private fun showPinInputDialog() {
+        val input = EditText(this).apply {
+            inputType = InputType.TYPE_CLASS_NUMBER
+            filters = arrayOf(InputFilter.LengthFilter(6))
+            hint = "6-значный код из Telegram"
+            gravity = Gravity.CENTER
+            textSize = 20f
+        }
+
+        val container = FrameLayout(this).apply {
+            val padding = (24 * resources.displayMetrics.density).toInt()
+            setPadding(padding, padding / 2, padding, padding / 2)
+            addView(input)
+        }
+
+        AlertDialog.Builder(this)
+            .setTitle("🔑 OneTap VR Авторизация")
+            .setMessage("Введите 6 цифр кода, полученного в Telegram-боте:")
+            .setView(container)
+            .setPositiveButton("Войти") { _, _ ->
+                val code = input.text.toString().trim()
+                if (code.length == 6) {
+                    fetchConfigByPin(code)
+                } else {
+                    toast("Введите корректный 6-значный код")
+                }
+            }
+            .setNegativeButton("Отмена", null)
+            .show()
+    }
+
+    private fun fetchConfigByPin(pinCode: String) {
+        toast("🔄 Подключение к серверу...")
+        lifecycleScope.launch(Dispatchers.IO) {
+            val cleanPin = pinCode.trim().replace(" ", "").replace("-", "")
+            val serverUrl = "http://213.176.95.227:8080/api/auth?code=$cleanPin"
+            var connection: HttpURLConnection? = null
+
+            try {
+                val url = URL(serverUrl)
+                connection = (url.openConnection() as HttpURLConnection).apply {
+                    requestMethod = "GET"
+                    connectTimeout = 8000
+                    readTimeout = 8000
+                    setRequestProperty("Accept", "application/json")
+                }
+
+                val responseCode = connection.responseCode
+                val stream = if (responseCode in 200..299) connection.inputStream else connection.errorStream
+                val responseText = BufferedReader(InputStreamReader(stream)).use { it.readText() }
+
+                val json = JSONObject(responseText)
+                withContext(Dispatchers.Main) {
+                    if (responseCode == 200 && json.optString("status") == "ok") {
+                        val vlessConfig = json.getString("config")
+                        mainViewModel.onAction(MainAction.ImportBatchConfig(vlessConfig))
+                        toastSuccess(R.string.toast_success)
+                    } else {
+                        val errorMsg = json.optString("message", "Неверный код или ключ не найден")
+                        toast("⚠️ $errorMsg")
+                    }
+                }
+            } catch (e: Exception) {
+                LogUtil.e(AppConfig.TAG, "PIN Auth Network Error", e)
+                withContext(Dispatchers.Main) {
+                    toast("⚠️ Ошибка сети при получении ключа: ${e.localizedMessage}")
+                }
+            } finally {
+                connection?.disconnect()
             }
         }
     }
