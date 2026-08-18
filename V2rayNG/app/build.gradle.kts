@@ -15,8 +15,8 @@ android {
         applicationId = "com.onetap.vpn.vr"
         minSdk = 24
         targetSdk = 37
-        versionCode = 737
-        versionName = "2.2.7"
+        versionCode = 738
+        versionName = "2.2.8"
 
         val abiFilterList = (properties["ABI_FILTERS"] as? String)?.split(';')
         splits {
