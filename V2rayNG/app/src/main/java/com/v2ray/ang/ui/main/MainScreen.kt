@@ -1,5 +1,10 @@
 package com.v2ray.ang.ui.main
 
+import android.app.AlertDialog
+import android.text.InputType
+import android.view.Gravity
+import android.widget.EditText
+import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.*
@@ -31,15 +36,23 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.v2ray.ang.compose.QRCodeDialog
 import com.v2ray.ang.dto.entities.ProfileItem
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import org.json.JSONObject
+import java.io.BufferedReader
+import java.io.InputStreamReader
+import java.net.HttpURLConnection
+import java.net.URL
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -59,6 +72,7 @@ fun MainScreen(
     val confirmRemove = uiState.confirmRemove
     val shareQRCodeBitmap = uiState.shareQRCodeBitmap
 
+    val context = LocalContext.current
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     var showSearch by remember { mutableStateOf(false) }
@@ -81,7 +95,7 @@ fun MainScreen(
 
     var locateInProgress by remember { mutableStateOf(false) }
 
-    // Настройка плавного скролла с инерцией
+    // Плавный скролл
     val scrollState = rememberScrollState()
     val smoothFlingBehavior = ScrollableDefaults.flingBehavior()
 
@@ -258,7 +272,7 @@ fun MainScreen(
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 16.dp),
+                            .padding(top = 16.dp, bottom = 12.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center
                     ) {
@@ -285,24 +299,151 @@ fun MainScreen(
                             letterSpacing = 1.5.sp
                         )
 
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(18.dp))
 
-                        // Панель быстрых кнопок
+                        // --- КРУПНАЯ ЦЕНТРАЛЬНАЯ КНОПКА ВВОДА PIN-КОДА ---
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 24.dp)
+                                .clip(RoundedCornerShape(16.dp))
+                                .background(
+                                    Brush.horizontalGradient(
+                                        listOf(Color(0xFF0D253A), Color(0xFF1B1A38))
+                                    )
+                                )
+                                .border(
+                                    width = 1.5.dp,
+                                    brush = Brush.horizontalGradient(
+                                        listOf(Color(0xFF00E5FF), Color(0xFF9D00FF))
+                                    ),
+                                    shape = RoundedCornerShape(16.dp)
+                                )
+                                .clickable {
+                                    val input = EditText(context).apply {
+                                        hint = "6 цифр"
+                                        inputType = InputType.TYPE_CLASS_NUMBER
+                                        gravity = Gravity.CENTER
+                                        textSize = 22f
+                                        setPadding(20, 30, 20, 30)
+                                    }
+                                    AlertDialog.Builder(context)
+                                        .setTitle("🔑 Ввод PIN-кода")
+                                        .setMessage("Введите 6-значный код из Telegram-бота @one_tap_vpn_bot:")
+                                        .setView(input)
+                                        .setPositiveButton("Активировать") { _, _ ->
+                                            val pin = input.text.toString().trim()
+                                            if (pin.isNotEmpty()) {
+                                                Toast.makeText(context, "🔑 Проверка PIN-кода...", Toast.LENGTH_SHORT).show()
+                                                scope.launch(Dispatchers.IO) {
+                                                    var connection: HttpURLConnection? = null
+                                                    try {
+                                                        val url = URL("http://213.176.95.227:8080/api/auth?code=$pin")
+                                                        connection = (url.openConnection() as HttpURLConnection).apply {
+                                                            requestMethod = "GET"
+                                                            connectTimeout = 8000
+                                                            readTimeout = 8000
+                                                            setRequestProperty("Accept", "application/json")
+                                                        }
+                                                        val responseCode = connection.responseCode
+                                                        val stream = if (responseCode in 200..299) connection.inputStream else connection.errorStream
+                                                        val responseText = BufferedReader(InputStreamReader(stream)).use { it.readText() }
+                                                        val json = JSONObject(responseText)
+
+                                                        withContext(Dispatchers.Main) {
+                                                            if (responseCode == 200 && json.optString("status") == "ok") {
+                                                                val vless = json.getString("config")
+                                                                onAction(MainAction.ImportBatchConfig(vless))
+                                                                Toast.makeText(context, "✅ Ключ успешно добавлен!", Toast.LENGTH_LONG).show()
+                                                            } else {
+                                                                val msg = json.optString("message", "Неверный код или срок подписки истек")
+                                                                Toast.makeText(context, "⚠️ $msg", Toast.LENGTH_LONG).show()
+                                                            }
+                                                        }
+                                                    } catch (e: Exception) {
+                                                        withContext(Dispatchers.Main) {
+                                                            Toast.makeText(context, "⚠️ Ошибка связи с сервером: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+                                                        }
+                                                    } finally {
+                                                        connection?.disconnect()
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        .setNegativeButton("Отмена", null)
+                                        .show()
+                                }
+                                .padding(vertical = 12.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Text(
+                                    text = "🔑 ВВЕСТИ PIN-КОД",
+                                    color = Color.White,
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.Black,
+                                    letterSpacing = 1.sp
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        // --- ПАНЕЛЬ КНОПОК: ИНСТРУКЦИЯ И СКАН QR ---
                         Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 24.dp),
                             horizontalArrangement = Arrangement.spacedBy(10.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            CustomActionButton(
-                                text = if (showInstructionBanner) "📖 Скрыть гид" else "📖 Инструкция",
-                                accentColor = Color(0xFF00FF88),
-                                onClick = { showInstructionBanner = !showInstructionBanner }
-                            )
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(Color(0xFF12141D))
+                                    .border(1.dp, Color(0xFF00FF88).copy(alpha = 0.5f), RoundedCornerShape(12.dp))
+                                    .clickable { showInstructionBanner = !showInstructionBanner }
+                                    .padding(vertical = 10.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = if (showInstructionBanner) "📖 Скрыть гид" else "📖 Инструкция",
+                                    color = Color.White,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
 
-                            CustomActionButton(
-                                text = "📷 Сканировать QR",
-                                accentColor = Color(0xFF9D00FF),
-                                onClick = { onAction(MainAction.ImportQRcode) }
-                            )
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(Color(0xFF12141D))
+                                    .border(1.dp, Color(0xFF9D00FF).copy(alpha = 0.6f), RoundedCornerShape(12.dp))
+                                    .clickable {
+                                        AlertDialog.Builder(context)
+                                            .setTitle("📸 Сканирование QR-кода")
+                                            .setMessage("Шлем запросит доступ к камере сквозного обзора (Passthrough).\n\nНажмите «Разрешить при использовании», после чего наведите шлем на экран телефона с открытым QR-кодом в боте.")
+                                            .setPositiveButton("Открыть камеру") { _, _ ->
+                                                onAction(MainAction.ImportQRcode)
+                                            }
+                                            .setNegativeButton("Отмена", null)
+                                            .show()
+                                    }
+                                    .padding(vertical = 10.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = "📷 Сканировать QR",
+                                    color = Color.White,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
                         }
                     }
 
@@ -355,10 +496,10 @@ fun MainScreen(
 
                                 Spacer(modifier = Modifier.height(8.dp))
 
-                                InlineInstructionStep("1", "Зайдите в Telegram-бот @one_tap_vpn_bot и получите QR-код.")
-                                InlineInstructionStep("2", "Нажмите «📷 Сканировать QR» прямо на этом экране.")
-                                InlineInstructionStep("3", "Наведите камеру очков на QR-код для импорта.")
-                                InlineInstructionStep("4", "Выберите появившийся сервер и нажмите кнопку подключения!")
+                                InlineInstructionStep("1", "Зайдите в Telegram-бот @one_tap_vpn_bot и получите PIN или QR-код.")
+                                InlineInstructionStep("2", "Нажмите «🔑 ВВЕСТИ PIN-КОД» или используйте «📷 Сканировать QR».")
+                                InlineInstructionStep("3", "При сканировании разрешите доступ к сквозной камере (Passthrough).")
+                                InlineInstructionStep("4", "Нажмите большую круглую кнопку питания по центру!")
                             }
                         }
                     }
@@ -413,30 +554,6 @@ fun MainScreen(
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun CustomActionButton(
-    text: String,
-    accentColor: Color,
-    onClick: () -> Unit
-) {
-    Box(
-        modifier = Modifier
-            .clip(RoundedCornerShape(12.dp))
-            .background(Color(0xFF12141D))
-            .border(1.dp, accentColor.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
-            .clickable(onClick = onClick)
-            .padding(horizontal = 14.dp, vertical = 8.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = text,
-            color = Color.White,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Bold
-        )
     }
 }
 
